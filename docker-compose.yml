@@ -1,0 +1,88 @@
+version: "3.9"
+
+services:
+  fastapi_app:
+    build:
+      context: .
+      # dockerfile: Dockerfile
+    container_name: fastapi_app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app/src  # mount mã nguồn để auto reload khi chỉnh sửa
+      - ./pyproject.toml:/app/pyproject.toml
+      - ./poetry.lock:/app/poetry.lock  # optional nếu có lockfile
+    env_file:
+      - .env
+    depends_on:
+      - redis_server
+    command: poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    # restart: unless-stopped
+
+  celery_worker:
+    build:
+      context: .
+    container_name: celery_worker
+    volumes:
+      - ./src:/app/src
+      - ./pyproject.toml:/app/pyproject.toml
+      - ./poetry.lock:/app/poetry.lock
+    env_file:
+      - .env
+    depends_on:
+      - redis_server
+      - fastapi_app
+    command: >
+      poetry run celery -A app.worker worker --loglevel=info
+  
+  # Lập lịch
+  celery_beat:
+    build:
+      context: .
+    container_name: celery_beat
+    volumes:
+      - ./src:/app/src
+      - ./pyproject.toml:/app/pyproject.toml
+      - ./poetry.lock:/app/poetry.lock
+    env_file:
+      - .env
+    depends_on:
+      - redis_server
+      - celery_worker
+    command: >
+      poetry run celery -A app.worker beat --loglevel=info
+
+    
+
+
+  redis_server:
+    image: redis:7.2-alpine
+    container_name: redis_server
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    # command: ["redis-server", "--appendonly", "yes"]
+    # restart: unless-stopped
+
+  flower_dashboard:
+    build:
+      context: .
+      # dockerfile: Dockerfile
+    container_name: flower_dashboard
+    depends_on:
+      - redis_server
+      - celery_worker
+    env_file:
+      - .env
+    # environment:
+    #   - PYTHONPATH=/app/src
+    #   - POETRY_VIRTUALENVS_IN_PROJECT=true
+    ports:
+      - "5555:5555"
+    command: >
+      poetry run celery -A app.worker flower --port=5555 --broker=${REDIS_BROKER_URL}
+    # restart: unless-stopped
+
+volumes:
+  redis_data:

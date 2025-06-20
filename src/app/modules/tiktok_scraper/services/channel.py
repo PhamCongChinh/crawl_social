@@ -1,0 +1,63 @@
+from pymongo import UpdateOne
+from app.modules.tiktok_scraper.models.channel import ChannelModel
+from app.modules.tiktok_scraper.models.source import SourceModel
+
+import logging
+
+from app.utils.timezone import now_vn
+log = logging.getLogger(__name__)
+
+class ChannelService:
+    @staticmethod
+    async def get_channels():
+        return await ChannelModel.find_all().to_list()
+    
+    @staticmethod
+    async def upsert_channels_bulk(channels: list[dict], source: SourceModel):
+        try:
+            if not channels:
+                log.warning("Không có dữ liệu để upsert (bulk)")
+                return
+            
+            # now = datetime.now(timezone.utc)
+            now = now_vn()
+            operations = []
+
+            for channel in channels:
+                if not channel.get("id"):
+                    log.warning("Channel không có ID, bỏ qua")
+                    continue
+
+                # _id = channel["id"]
+                _id = f"{source.source_url}/video/{channel['id']}"
+                channel["org_id"] = source.org_id
+                channel["source_name"] = source.source_name
+                channel["source_type"] = source.source_type
+                channel["source_url"] = source.source_url
+                channel["source_channel"] = source.source_channel
+                channel["updated_at"] = now
+
+                update_doc = {
+                    "$set": {
+                        **channel,
+                        "updated_at": now,
+                    },
+                    "$setOnInsert": {
+                        "created_at": now
+                    }
+                }
+                operations.append(
+                    UpdateOne(
+                        {"_id": _id},
+                        update_doc,
+                        upsert=True
+                    )
+                )
+            if not operations:
+                log.info("Không có operation nào được tạo cho bulk upsert.")
+                return
+            result = await ChannelModel.get_motor_collection().bulk_write(operations)
+            # log.info(f"Bulk upsert xong: inserted={result.upserted_count}, modified={result.modified_count}")
+            return result
+        except Exception as e:
+            log.error(e)

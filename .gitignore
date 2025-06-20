@@ -1,0 +1,14 @@
+# PyCharm project settings
+.idea/
+
+# Python cache directories
+__pycache__/
+**/__pycache__/
+
+logs/
+
+.env
+
+# Celery Beat schedule database files
+celerybeat-schedule*
+*.rdb

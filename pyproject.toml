@@ -1,0 +1,45 @@
+[project]
+name = "crawl-social"
+version = "0.1.0"
+description = "A web crawler using FastAPI, Celery and Redis"
+authors = [
+    {name = "ChinhPC", email = "chinhpham1609@gmail.com"}
+]
+
+readme = "README.md"
+
+requires-python = ">=3.9,<3.13"
+
+dependencies = [
+    "fastapi (>=0.115.12,<0.116.0)",
+    "uvicorn[standard] (>=0.34.3,<0.35.0)",
+    "pytz (>=2025.2,<2026.0)",
+    "pydantic-settings (>=2.9.1,<3.0.0)",
+    "motor (>=3.7.1,<4.0.0)",
+    "beanie (>=1.30.0,<2.0.0)",
+    "httpx (>=0.28.1,<0.29.0)",
+    "requests (>=2.32.4,<3.0.0)",
+    "scrapfly-sdk (>=0.8.23,<0.9.0)",
+    "jmespath (>=1.0.1,<2.0.0)",
+    "tzdata (>=2025.2,<2026.0)",
+    "parsel (>=1.10.0,<2.0.0)",
+    "apscheduler (>=3.11.0,<4.0.0)",
+    "celery (>=5.5.3,<6.0.0)",
+    # "redis (>=6.2.0,<7.0.0)",
+    "redis (>=6.2.0,<7.0.0)",
+    "flower (>=2.0.1,<3.0.0)",
+    "sqlalchemy (>=2.0.41,<3.0.0)",
+    "asyncpg (>=0.30.0,<0.31.0)"
+]
+
+[tool.poetry]
+packages = [{include = "app", from = "src"}] # từ src lấy app
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry.scripts]
+app = "app.main:main" #thư mục app, file main, hàm main
