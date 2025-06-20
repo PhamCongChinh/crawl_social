@@ -34,19 +34,25 @@ async def crawl_posts():
         log.info("Đang lấy channels từ cơ sở dữ liệu TikTok")
         channels = await ChannelService.get_channels()
         log.info(f"Đã tìm thấy {len(channels)} channels trong cơ sở dữ liệu")
+
+        
         
         flatten = []
         for channel in channels:
-            data = await scrape_posts(urls=[channel.id])
-            log.info(channel.id)
-            if data and len(data) > 0:
-                post = flatten_post_data(data[0], channel=channel)
-                flatten.append(post)
-                await postToES([post])
-                await ChannelService.channel_crawled(channel.id)
-                print(f"✅ Thêm vào flatten: {post['id']}")
-            else:
-                print(f"❌ Không có data từ channel {channel.id}")
+            try:
+                data = await scrape_posts(urls=[channel.id])
+                log.info(channel.id)
+                if data and len(data) > 0:
+                    post = flatten_post_data(data[0], channel=channel)
+                    flatten.append(post)
+                    await postToES([post])
+                    await ChannelService.channel_crawled(channel.id)
+                    print(f"✅ Thêm vào flatten: {post['id']}")
+                else:
+                    print(f"❌ Không có data từ channel {channel.id}")
+            except Exception as e:
+                log.error(e)
+                continue
         await PostService.upsert_posts_bulk(flatten)
         # result = await postToES(flatten)
         return flatten
