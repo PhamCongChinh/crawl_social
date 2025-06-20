@@ -23,6 +23,7 @@ class ChannelModel(Document):
     source_name: Optional[str] = None
     source_url: Optional[str] = None
     source_channel: Optional[str] = None
+    crawled: Optional[int] = 0
 
     @field_validator("create_time", mode="before")
     @classmethod

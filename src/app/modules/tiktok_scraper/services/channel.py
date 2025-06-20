@@ -10,8 +10,18 @@ log = logging.getLogger(__name__)
 class ChannelService:
     @staticmethod
     async def get_channels():
-        return await ChannelModel.find_all().to_list()
+        # return await ChannelModel.find_all().to_list()
+        return await ChannelModel.find(ChannelModel.crawled == 0).to_list()
     
+    @staticmethod
+    async def delele_channel(id: str):
+        await ChannelModel.find_one(ChannelModel.id == id).delete()
+
+    @staticmethod
+    async def channel_crawled(id: str):
+        await ChannelModel.find_one(ChannelModel.id == id).update({"$set": {"crawled": 1}})
+
+
     @staticmethod
     async def upsert_channels_bulk(channels: list[dict], source: SourceModel):
         try:
@@ -37,12 +47,15 @@ class ChannelService:
                 channel["source_channel"] = source.source_channel
                 channel["updated_at"] = now
 
+                channel.pop("crawled", None)
+
                 update_doc = {
                     "$set": {
                         **channel,
                         "updated_at": now,
                     },
                     "$setOnInsert": {
+                        "crawled": 0,
                         "created_at": now
                     }
                 }

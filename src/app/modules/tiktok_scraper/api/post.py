@@ -43,6 +43,7 @@ async def crawl_posts():
                 post = flatten_post_data(data[0], channel=channel)
                 flatten.append(post)
                 await postToES([post])
+                await ChannelService.channel_crawled(channel.id)
                 print(f"✅ Thêm vào flatten: {post['id']}")
             else:
                 print(f"❌ Không có data từ channel {channel.id}")

@@ -31,13 +31,18 @@ async def crawl_channels():
     try:
         sources = await SourceService.get_sources()
         for source in sources:
-            log.info(f"Đang crawl channels cho {source.source_name} từ {source.source_url}")
-            data = await scrape_channel(url=source.source_url)
-            log.info(f"Đang upsert {len(data)} channels vào cơ sở dữ liệu")
+            try:
+                log.info(f"Đang crawl channels cho {source.source_name} từ {source.source_url}")
+                data = await scrape_channel(url=source.source_url)
+                log.info(f"Đang upsert {len(data)} channels vào cơ sở dữ liệu")
+                await async_delay(1,3)
+                result = await ChannelService.upsert_channels_bulk(data, source=source)
+                log.info(f"Bulk upsert xong: inserted={result.upserted_count}, modified={result.modified_count}")
+            except Exception as e:
+                log.error(f"{e}")
+                continue
+            
             await async_delay(1,3)
-            result = await ChannelService.upsert_channels_bulk(data, source=source)
-            log.info(f"Bulk upsert xong: inserted={result.upserted_count}, modified={result.modified_count}")
-        await async_delay(1,3)
        
         return {"message": "Crawl channels completed", "count": len(sources)}
     except Exception as e:
