@@ -3,7 +3,7 @@ import requests
 
 ROOT_URL_TEMP = 'http://103.97.125.64:8900/api/elastic/insert-posts'
 
-async def postToES(content: list):
+async def postToES(content: any):
     data = {
         "index": "facebook_raw_posts",
         "data": content,

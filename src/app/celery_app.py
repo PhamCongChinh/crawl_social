@@ -20,6 +20,7 @@ celery_app.conf.update(
     enable_utc=False,
 )
 
+
 # CHỖ QUAN TRỌNG: tên này là tên Python package (không phải path)
 # celery_app.autodiscover_tasks(["app.tasks"])
 

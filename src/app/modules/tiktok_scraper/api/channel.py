@@ -37,26 +37,9 @@ async def crawl_channels():
             await async_delay(1,3)
             result = await ChannelService.upsert_channels_bulk(data, source=source)
             log.info(f"Bulk upsert xong: inserted={result.upserted_count}, modified={result.modified_count}")
-            break
         await async_delay(1,3)
-        # async def crawl_all():
-        #     tasks = [handle_source(source) for source in sources]
-        #     await asyncio.gather(*tasks)
-
-        # asyncio.create_task(crawl_all())
-        # tasks = [handle_source(source) for source in sources]
-        # results = await asyncio.gather(*tasks)
-        # print(results)
+       
         return {"message": "Crawl channels completed", "count": len(sources)}
     except Exception as e:
         log.error(f"Lỗi khi lấy URLs: {e}")
         raise HTTPException(status_code=500, detail="Không thể lấy danh sách URLs")
-    
-async def handle_source(source: SourceModel):
-    log.info(f"Đang crawl channels cho {source.source_name} từ {source.source_url}")
-    data = await scrape_channel(url=source.source_url)
-    log.info(f"Đang upsert {len(data)} channels vào cơ sở dữ liệu")
-    await async_delay(1,3)
-    result = await ChannelService.upsert_channels_bulk(data, source=source)
-    log.info(f"Bulk upsert xong: inserted={result.upserted_count}, modified={result.modified_count}")
-    return result
