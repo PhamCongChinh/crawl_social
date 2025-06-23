@@ -30,6 +30,13 @@ async def get_all_sources():
 async def crawl_channels():
     try:
         sources = await SourceService.get_sources()
+        # source = await SourceService.get_source_by_id("685529f0792998631febe012")
+        # data = await scrape_channel(url=source.source_url)
+        # log.info(f"Đang upsert {len(data)} channels vào cơ sở dữ liệu")
+        # await async_delay(1,3)
+        # result = await ChannelService.upsert_channels_bulk(data, source=source)
+        # log.info(f"Bulk upsert xong: inserted={result.upserted_count}, modified={result.modified_count}")
+        
         for source in sources:
             try:
                 log.info(f"Đang crawl channels cho {source.source_name} từ {source.source_url}")

@@ -1,6 +1,7 @@
 from datetime import datetime
 import json
 from pathlib import Path
+import traceback
 from zoneinfo import ZoneInfo
 from bson import Int64
 from fastapi import APIRouter
@@ -51,7 +52,8 @@ async def crawl_posts():
                 else:
                     print(f"❌ Không có data từ channel {channel.id}")
             except Exception as e:
-                log.error(e)
+                log.error(f"Lỗi khi xử lý channel {channel.id}: {e}")
+                log.error(traceback.format_exc())  # log full stack trace
                 continue
         await PostService.upsert_posts_bulk(flatten)
         # result = await postToES(flatten)
