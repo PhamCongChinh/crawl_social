@@ -33,7 +33,7 @@ services:
       - redis_server
       - fastapi_app
     command: >
-      poetry run celery -A app.worker worker --loglevel=info
+      poetry run celery -A app.worker worker --concurrency=2 --loglevel=info
   
   # Lập lịch
   celery_beat:

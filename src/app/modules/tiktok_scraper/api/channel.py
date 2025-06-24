@@ -1,11 +1,14 @@
 import asyncio
+from typing import List
 from fastapi import APIRouter, HTTPException
 
 import logging
 
 from app.modules.tiktok_scraper.models.source import SourceModel
+from app.modules.tiktok_scraper.schemas.channel import ChannelRequest
 from app.modules.tiktok_scraper.scrapers.channel import scrape_channel
 from app.modules.tiktok_scraper.services.source import SourceService
+from app.tasks.crawl_tiktok import crawl_channels_test
 from app.utils.delay import async_delay
 log = logging.getLogger(__name__)
 
@@ -25,6 +28,12 @@ async def get_all_sources():
     except Exception as e:
         log.error(f"Lỗi khi lấy URLs: {e}")
         raise HTTPException(status_code=500, detail="Không thể lấy danh sách URLs")
+
+@router.post("/crawl-channels")
+def crawl_tiktok_channels(channels: List[ChannelRequest]):
+    for ch in channels:
+        crawl_channels_test.delay(ch.model_dump())
+    return { "message": "Tasks submitted" }
 
 @router.get("/channels/crawl")
 async def crawl_channels():

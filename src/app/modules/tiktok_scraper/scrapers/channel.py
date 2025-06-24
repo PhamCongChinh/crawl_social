@@ -50,7 +50,24 @@ def parse_channel(response: ScrapeApiResponse):
 async def scrape_channel(url: str) -> List[Dict]:
     """scrape video data from a channel (profile with videos)"""
     # js code for scrolling down with maximum 15 scrolls. It stops at the end without using the full iterations
-    js = """const scrollToEnd = (i = 0) => (window.innerHeight + window.scrollY >= document.body.scrollHeight || i >= 15) ? (console.log("Reached the bottom or maximum iterations. Stopping further iterations."), setTimeout(() => console.log("Waited 10 seconds after all iterations."), 10000)) : (window.scrollTo(0, document.body.scrollHeight), setTimeout(() => scrollToEnd(i + 1), 5000)); scrollToEnd();"""
+    # Lấy full
+    # js = """const scrollToEnd = (i = 0) => (window.innerHeight + window.scrollY >= document.body.scrollHeight || i >= 15) ? (console.log("Reached the bottom or maximum iterations. Stopping further iterations."), setTimeout(() => console.log("Waited 10 seconds after all iterations."), 10000)) : (window.scrollTo(0, document.body.scrollHeight), setTimeout(() => scrollToEnd(i + 1), 5000)); scrollToEnd();"""
+    
+    # Lấy max 20 bài
+    js = """
+        const scrollUntilEnoughPosts = (targetCount = 4, i = 0, maxScrolls = 1) => {
+            const posts = document.querySelectorAll("[data-e2e='user-post-item']");
+            if (posts.length >= targetCount || i >= maxScrolls) {
+                setTimeout(() => console.log("⏱️ Chờ xong 10 giây."), 10000);
+                return;
+            }
+            window.scrollTo(0, document.body.scrollHeight);
+            setTimeout(() => scrollUntilEnoughPosts(targetCount, i + 1, maxScrolls), 3000);
+            };
+        scrollUntilEnoughPosts();
+        """
+    
+    
     log.info(f"Đang quét trang kênh với URL {url} để lấy dữ liệu bài viết")
     response = await SCRAPFLY.async_scrape(
         ScrapeConfig(

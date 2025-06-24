@@ -7,9 +7,9 @@ celery_app = Celery(
     "worker",
     broker=settings.redis_broker_url,
     backend=settings.redis_backend_url,
-    include=[
-        "app.tasks.crawl_tiktok"
-    ]
+    # include=[
+    #     "app.tasks.crawl_tiktok"
+    # ]
 )
 
 celery_app.conf.update(
@@ -20,9 +20,17 @@ celery_app.conf.update(
     enable_utc=False,
 )
 
+celery_app.autodiscover_tasks(["app.tasks"])
+
+# celery_app.conf.task_routes = {
+#     "tasks.fast_tasks.*": {"queue": "fast_queue"},
+#     "tasks.slow_tasks.*": {"queue": "slow_queue"},
+# }
+
+# celery_app.conf.task_default_queue = "default"
 
 # CHỖ QUAN TRỌNG: tên này là tên Python package (không phải path)
-# celery_app.autodiscover_tasks(["app.tasks"])
+
 
 # DEBUG in ra khi khởi động
 print("✅ CELERY CONNECTED:")

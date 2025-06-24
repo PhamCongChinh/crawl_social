@@ -1,6 +1,12 @@
 from bson import ObjectId
+from fastapi.encoders import jsonable_encoder
+
 from app.modules.tiktok_scraper.models.source import SourceModel
+from app.modules.tiktok_scraper.services.mongo_service import MongoService
 # from app.config import postgres_connection
+
+
+mongo = MongoService()
 
 class SourceService:
     @staticmethod
@@ -23,3 +29,6 @@ class SourceService:
         else:
             await SourceModel(**data).insert()
             return "inserted"
+        
+    def get_sources_sync(self):
+        return list(self.db["tiktok_sources"].find())

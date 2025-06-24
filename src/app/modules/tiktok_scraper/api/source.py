@@ -21,7 +21,6 @@ async def get_all_sources():
     try:
         log.info("Đang lấy dữ liệu Sources")
         sources = await SourceService.get_sources()
-        print(sources)
         if not sources:
             raise HTTPException(status_code=204, detail="Không có dữ liệu")
         log.info(f"Đã tìm thấy {len(sources)} bài viết trong cơ sở dữ liệu")

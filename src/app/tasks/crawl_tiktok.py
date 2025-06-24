@@ -1,25 +1,55 @@
 import asyncio
 from datetime import datetime
 import json
+import time
 from zoneinfo import ZoneInfo
 
 from bson import Int64
+import requests
 from app.modules.elastic_search.service import postToES
 from app.modules.scheduler.models.jobs_log import JobLog
-from app.modules.tiktok_scraper.api.channel import crawl_channels, get_all_sources
-from app.modules.tiktok_scraper.api.post import crawl_posts
+# from app.modules.tiktok_scraper.api.channel import crawl_channels, get_all_sources
+# from app.modules.tiktok_scraper.api.post import crawl_posts
 from app.modules.tiktok_scraper.models.channel import ChannelModel
+# from app.modules.tiktok_scraper.models.source import SourceModel
+# from app.modules.tiktok_scraper.scrapers.channel import scrape_channel
+# from app.modules.tiktok_scraper.scrapers.post import scrape_posts
+# from app.modules.tiktok_scraper.services.channel import ChannelService
+# from app.modules.tiktok_scraper.services.post import PostService
+# from app.modules.tiktok_scraper.services.source import SourceService
+
 from app.modules.tiktok_scraper.scrapers.channel import scrape_channel
-from app.modules.tiktok_scraper.scrapers.post import scrape_posts
-from app.modules.tiktok_scraper.services.post import PostService
-from app.modules.tiktok_scraper.services.source import SourceService
+from app.modules.tiktok_scraper.services.mongo_service import MongoService
+from app.utils.async_helper import run_async
 from app.worker import celery_app
-from celery import shared_task
 
 import logging
 log = logging.getLogger(__name__)
 
 from app.config import mongo_connection
+
+mongo = MongoService()
+
+@celery_app.task(name="app.tasks.crawl_channels")
+async def crawl_channels_test(channel_data):
+    # data = await scrape_channel(url=channel_data.url)
+    print(channel_data.url)
+    return channel_data["url"]
+
+
+
+@celery_app.task(name="app.tasks.crawl_tiktok_channels")
+def crawl_tiktok_channels():
+    try:
+        sources = mongo.get_sources()
+        # print("✅ Data:", data)
+        return f"Lấy được {len(sources)} bản ghi"
+
+    except Exception as e:
+        print(f"❌ Lỗi khi truy vấn Mongo: {e}")
+        return f"Lỗi: {str(e)}"
+
+
 
 @celery_app.task(name="app.tasks.crawl_tiktok", bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 3})
 def crawl_tiktok(self, job_id: str, channel_id: str):
@@ -50,8 +80,8 @@ def crawl_tiktok(self, job_id: str, channel_id: str):
             #     await PostService.upsert_posts_bulk(flatten)
             #     result = await postToES(flatten)
 
-            await crawl_channels()
-            await crawl_posts()
+            # await crawl_channels()
+            # await crawl_posts()
 
             await JobLog(job_id=job_id, status="success", message="Crawl thành công").insert()
             return {"message":"Thành công"}
