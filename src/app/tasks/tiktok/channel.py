@@ -1,4 +1,5 @@
 import asyncio
+from app.modules.tiktok_scraper.scrapers.channel import scrape_channel
 from app.modules.tiktok_scraper.services.channel import ChannelService
 from app.modules.tiktok_scraper.services.source import SourceService
 from app.utils.delay import async_delay
@@ -42,7 +43,8 @@ def crawl_tiktok_channel(source: dict):
             await mongo_connection.connect()
             source_model = SourceModel(**source)
 
-            data = await safe_scrape(source_model.source_url)
+            # data = await safe_scrape(source_model.source_url)
+            data = await scrape_channel(source_model.source_url)
             if not data:
                 log.warning(f"⚠️ Không lấy được dữ liệu từ {source_model.source_url}")
                 return {

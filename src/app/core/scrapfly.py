@@ -5,5 +5,6 @@ SCRAPFLY = ScrapflyClient(settings.SCRAPFLY_API_KEY)
 
 BASE_CONFIG = {
     "asp": True,
+    "country": "US",
     "proxy_pool": "public_residential_pool"
 }
