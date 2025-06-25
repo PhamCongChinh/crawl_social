@@ -16,6 +16,11 @@ log = logging.getLogger(__name__)
 
 
 class ChannelService:
+
+    @staticmethod
+    async def get_all_channels():
+        return await ChannelModel.find_all().to_list()
+
     @staticmethod
     async def get_channels():
         # return await ChannelModel.find_all().to_list()

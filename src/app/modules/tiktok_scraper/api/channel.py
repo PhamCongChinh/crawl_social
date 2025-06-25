@@ -20,7 +20,7 @@ router = APIRouter()
 async def get_all_sources():
     try:
         log.info("Đang lấy dữ liệu Channels")
-        channels = await ChannelService.get_channels()
+        channels = await ChannelService.get_all_channels()
         if not channels:
             raise HTTPException(status_code=204, detail="Không có dữ liệu")
         log.info(f"Đã tìm thấy {len(channels)} bài viết trong cơ sở dữ liệu")
@@ -29,16 +29,12 @@ async def get_all_sources():
         log.error(f"Lỗi khi lấy URLs: {e}")
         raise HTTPException(status_code=500, detail="Không thể lấy danh sách URLs")
 
-# @router.post("/crawl-channels")
-# async def crawl_tiktok_channels1(channels: List[ChannelRequest]):
-#     for ch in channels:
-#         crawl_channels_test.delay(ch.model_dump())
-#     return { "message": "Tasks submitted" }
-
 @router.get("/channels/crawl")
 async def crawl_channels():
     try:
-        crawl_tiktok_channels.delay()
+        job_id = "tiktok"
+        channel_id = "tiktok"
+        crawl_tiktok_channels.delay(job_id, channel_id)
         # sources = await SourceService.get_sources()
         # for source in sources:
         #     # Dùng `.dict()` nếu là Pydantic object
@@ -70,3 +66,10 @@ async def crawl_channels():
     except Exception as e:
         log.error(f"Lỗi khi lấy URLs: {e}")
         raise HTTPException(status_code=500, detail="Không thể lấy danh sách URLs")
+    
+
+# @router.post("/crawl-channels")
+# async def crawl_tiktok_channels1(channels: List[ChannelRequest]):
+#     for ch in channels:
+#         crawl_channels_test.delay(ch.model_dump())
+#     return { "message": "Tasks submitted" }
