@@ -4,12 +4,19 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
-from app.tasks.crawl_tiktok import crawl_tiktok
+# from app.tasks.crawl_tiktok import crawl_tiktok
+
+from app.tasks.tiktok.task_map import TASK_MAP
 
 scheduler = AsyncIOScheduler()
 
 async def add_job(metadata: JobModel):
     job_id = metadata.id
+
+    task_func = TASK_MAP.get(metadata.crawl_type)
+    if not task_func:
+        raise HTTPException(status_code=400, detail="crawl_type không hợp lệ")
+
     # ✅ Chuẩn hóa trigger
     try:
         if metadata.trigger_type == "cron":
@@ -28,7 +35,8 @@ async def add_job(metadata: JobModel):
     # ✅ Đăng ký job
     try:
         scheduler.add_job(
-            func=crawl_tiktok.delay,  # Gửi task sang Celery
+            # func=crawl_tiktok.delay,  # Gửi task sang Celery
+            func=task_func.delay,
             trigger=trigger,
             id=job_id,
             args=[job_id, metadata.channel_id],

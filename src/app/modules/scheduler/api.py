@@ -9,11 +9,6 @@ from app.modules.scheduler.service import add_job, scheduler
 
 router = APIRouter()
 
-# @router.get("/")
-# async def get_jobs():
-#     print("pôiqwpoeioqpwe")
-#     return {"message": "Jobs"}
-
 @router.post("")
 async def create_job(job: JobModel):
     # Lưu vào Mongo

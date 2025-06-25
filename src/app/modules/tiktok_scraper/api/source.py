@@ -11,11 +11,6 @@ from app.modules.tiktok_scraper.services.source import SourceService
 
 router = APIRouter()
 
-# @router.get("/crawl")
-# async def crawl():
-#     task = crawl_source_task.delay()
-#     return {"task_id": task.id}
-
 @router.get("/sources")
 async def get_all_sources():
     try:

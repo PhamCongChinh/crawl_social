@@ -1,3 +1,4 @@
+from typing import List
 from pymongo import UpdateOne
 from app.modules.tiktok_scraper.models.channel import ChannelModel
 from app.modules.tiktok_scraper.models.source import SourceModel
@@ -8,7 +9,11 @@ from app.modules.tiktok_scraper.scrapers.channel import scrape_channel
 from app.modules.tiktok_scraper.services.source import SourceService
 from app.utils.delay import async_delay
 from app.utils.timezone import now_vn
+
+from pymongo.errors import BulkWriteError
+
 log = logging.getLogger(__name__)
+
 
 class ChannelService:
     @staticmethod
@@ -78,22 +83,27 @@ class ChannelService:
         except Exception as e:
             log.error(e)
     
-    @staticmethod
-    async def crawl_channels():
-        sources = await SourceService.get_sources()
-        for source in sources:
-            try:
-                log.info(f"Đang crawl channels cho {source.source_name} từ {source.source_url}")
-                data = await scrape_channel(url=source.source_url)
-                log.info(f"Đang upsert {len(data)} channels vào cơ sở dữ liệu")
-                await async_delay(1,3)
-                result = await ChannelService.upsert_channels_bulk(data, source=source)
-                log.info(f"Bulk upsert xong: inserted={result.upserted_count}, modified={result.modified_count}")
-            except Exception as e:
-                log.error(f"{e}")
-                continue
+    # @staticmethod
+    # async def crawl_channels():
+    #     sources = await SourceService.get_sources()
+    #     for source in sources:
+    #         try:
+    #             log.info(f"Đang crawl channels cho {source.source_name} từ {source.source_url}")
+    #             data = await scrape_channel(url=source.source_url)
+    #             log.info(f"Đang upsert {len(data)} channels vào cơ sở dữ liệu")
+    #             await async_delay(1,3)
+    #             result = await ChannelService.upsert_channels_bulk(data, source=source)
+    #             log.info(f"Bulk upsert xong: inserted={result.upserted_count}, modified={result.modified_count}")
+    #         except Exception as e:
+    #             log.error(f"{e}")
+    #             continue
             
-            await async_delay(1,3)
-            break
+    #         await async_delay(1,3)
+    #         break
        
-        return {"message": "Crawl channels completed", "count": len(sources)}
+    #     return {"message": "Crawl channels completed", "count": len(sources)}
+    
+    
+    def chunked(data:List[dict], size: int):
+        for i in range(0, len(data), size):
+            yield data[i:i + size]

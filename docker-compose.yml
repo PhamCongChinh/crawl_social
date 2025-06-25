@@ -33,7 +33,7 @@ services:
       - redis_server
       - fastapi_app
     command: >
-      poetry run celery -A app.worker worker --concurrency=2 --loglevel=info
+      poetry run celery -A app.worker worker --concurrency=4 --loglevel=info
   
   # Lập lịch
   celery_beat:
@@ -81,7 +81,7 @@ services:
     ports:
       - "5555:5555"
     command: >
-      poetry run celery -A app.worker flower --port=5555 --broker=${REDIS_BROKER_URL}
+      poetry run celery -A app.worker --broker=${REDIS_BROKER_URL} flower --port=5555 
     # restart: unless-stopped
 
 volumes:
