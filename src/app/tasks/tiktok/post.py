@@ -27,7 +27,7 @@ def crawl_tiktok_posts(job_id: str, channel_id: str):
     async def do_crawl():
         try:
             await mongo_connection.connect()
-            channels = await ChannelService.get_channels()
+            channels = await ChannelService.get_all_channels()
             log.info(f"🚀 Đang cào {len(channels)}")
             for channel in channels:
                 log.info(f"🚀 Đang cào {channel.source_url}")
@@ -47,7 +47,6 @@ def crawl_tiktok_post(channel: dict):
             await mongo_connection.connect()
             channel_model = ChannelModel(**channel)
             log.warning(f"🚀 Crawling source {channel_model.id}")
-            # data = await safe_scrape(channel_model.source_url)
             data = await scrape_posts(urls=[channel_model.id])
 
             # Nếu scrape_posts trả về dict lỗi
@@ -93,7 +92,7 @@ def flatten_post_data(raw: dict, channel: ChannelModel) -> dict:
         "crawl_time": int(datetime.now(VN_TZ).timestamp()),
         "org_id": channel.org_id,
         "subject_id": "",
-        "title": raw.get("desc", ""),
+        "title": "",
         "description": raw.get("desc", ""),
         "content": raw.get("desc", ""),
         "url": f"https://www.tiktok.com/@{raw.get('author', {}).get('uniqueId', '')}/video/{raw['id']}",

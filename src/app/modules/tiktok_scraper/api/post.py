@@ -16,6 +16,7 @@ from app.modules.tiktok_scraper.services.post import PostService
 import logging
 
 # from app.tasks.crawl_tiktok import crawl_tiktok_posts
+from app.tasks.tiktok.post import crawl_tiktok_posts
 from app.utils.delay import async_delay
 log = logging.getLogger(__name__)
 
@@ -33,14 +34,17 @@ async def get_posts():
 @router.get("/posts/crawl")
 async def crawl_posts():
     try:
-        channels = await ChannelService.get_channels()
-        for channel in channels:
-            # Dùng `.dict()` nếu là Pydantic object
-            data = channel.model_dump(by_alias=True)
-            # Chuyển ObjectId về string
-            data["_id"] = str(data["_id"])
-            # crawl_tiktok_posts.delay(data)
-        return {"status": "submitted", "total": len(channels)}
+        job_id = "tiktok"
+        channel_id = "tiktok"
+        crawl_tiktok_posts.delay(job_id, channel_id)
+        # channels = await ChannelService.get_channels()
+        # for channel in channels:
+        #     # Dùng `.dict()` nếu là Pydantic object
+        #     data = channel.model_dump(by_alias=True)
+        #     # Chuyển ObjectId về string
+        #     data["_id"] = str(data["_id"])
+        #     # crawl_tiktok_posts.delay(data)
+        # return {"status": "submitted", "total": len(channels)}
     except Exception as e:
         return {"status": "error", "message": str(e)}
     
