@@ -53,32 +53,19 @@ def parse_channel(response: ScrapeApiResponse):
 async def scrape_channel(url: str) -> List[Dict]:
     """scrape video data from a channel (profile with videos)"""
     # js code for scrolling down with maximum 15 scrolls. It stops at the end without using the full iterations
-    # Lấy full
-    # js = """const scrollToEnd = (i = 0) => (window.innerHeight + window.scrollY >= document.body.scrollHeight || i >= 15) ? (console.log("Reached the bottom or maximum iterations. Stopping further iterations."), setTimeout(() => console.log("Waited 10 seconds after all iterations."), 10000)) : (window.scrollTo(0, document.body.scrollHeight), setTimeout(() => scrollToEnd(i + 1), 5000)); scrollToEnd();"""
-    # Lấy 2 lần cuộn
-    js = """
-        document.documentElement.style.scrollBehavior = 'auto';
-        const scrollToEnd = (i = 0) =>
-            (window.innerHeight + window.scrollY >= document.body.scrollHeight || i >= 1)
-                ? setTimeout(() => console.log("Đã scroll đủ cho 8 video."), 3000)
-                : (window.scrollTo(0, document.body.scrollHeight), setTimeout(() => scrollToEnd(i + 1), 2000));
-        scrollToEnd();
-    """
-
-    log.info(f"Đang quét trang kênh với URL {url} để lấy dữ liệu bài viết")
-
+    js = """const scrollToEnd = (i = 0) => (window.innerHeight + window.scrollY >= document.body.scrollHeight || i >= 15) ? (console.log("Reached the bottom or maximum iterations. Stopping further iterations."), setTimeout(() => console.log("Waited 10 seconds after all iterations."), 10000)) : (window.scrollTo(0, document.body.scrollHeight), setTimeout(() => scrollToEnd(i + 1), 5000)); scrollToEnd();"""
+    log.info(f"scraping channel page with the URL {url} for post data")
     response = await SCRAPFLY.async_scrape(
         ScrapeConfig(
             url,
             asp=True,
+            country="AU",
             wait_for_selector="//div[@data-e2e='user-post-item-list']",
             render_js=True,
-            # auto_scroll=True, # Full
-            auto_scroll=False, # Không full
+            auto_scroll=True,
             rendering_wait=10000,
             js=js,
-            debug=False,
-            session=False,
+            debug=True,
         )
     )
         

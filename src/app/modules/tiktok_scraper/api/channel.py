@@ -16,7 +16,7 @@ from app.modules.tiktok_scraper.services.channel import ChannelService
 router = APIRouter()
 
 @router.get("/channels")
-async def get_all_sources():
+async def get_channels():
     try:
         log.info("Đang lấy dữ liệu Channels")
         channels = await ChannelService.get_channels()
@@ -31,12 +31,12 @@ async def get_all_sources():
 @router.get("/channels/crawl")
 async def crawl_channels():
     try:
-        job_id = "tiktok"
-        channel_id = "tiktok"
+        job_id = "tiktok1"
+        channel_id = "tiktok1"
         crawl_tiktok_channels.delay(job_id, channel_id)
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-    except Exception as e:
-        log.error(f"Lỗi khi lấy URLs: {e}")
-        raise HTTPException(status_code=500, detail="Không thể lấy danh sách URLs")
+    # except Exception as e:
+    #     log.error(f"Lỗi khi lấy URLs: {e}")
+    #     raise HTTPException(status_code=500, detail="Không thể lấy danh sách URLs")

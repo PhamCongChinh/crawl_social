@@ -1,6 +1,4 @@
 from bson import ObjectId
-from fastapi.encoders import jsonable_encoder
-
 from app.modules.tiktok_scraper.models.source import SourceModel
 # from app.config import postgres_connection
 
@@ -9,15 +7,12 @@ class SourceService:
     @staticmethod
     async def get_sources():
         return await SourceModel.find_all().to_list()
-        # sources = await postgres_connection.fetch_all(
-        #     "SELECT * FROM dim_sources WHERE source_channel = 'tt'"
-        # )
-        # return sources
 
+    @staticmethod
     async def get_source_by_id(source_id: any):
         return await SourceModel.get(ObjectId(source_id))
-    
 
+    @staticmethod
     async def upsert_source(data: dict) -> SourceModel:
         existing = await SourceModel.find_one(SourceModel.source_url == data["source_url"])
         if existing:
@@ -27,5 +22,5 @@ class SourceService:
             await SourceModel(**data).insert()
             return "inserted"
         
-    def get_sources_sync(self):
-        return list(self.db["tiktok_sources"].find())
+    # def get_sources_sync(self):
+    #     return list(self.db["tiktok_sources"].find())

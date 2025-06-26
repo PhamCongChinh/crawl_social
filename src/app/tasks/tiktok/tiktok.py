@@ -1,6 +1,5 @@
 import logging
 
-from app.utils import log_job_timing
 log = logging.getLogger(__name__)
 
 from app.config import mongo_connection
@@ -17,7 +16,6 @@ from app.tasks.tiktok.post import crawl_tiktok_posts
 )
 def crawl_channel_then_post(job_id: str, channel_id: str):
     log.info(f"🚀 [START] {job_id} - Crawl channel → post cho {channel_id}")
-    log_job_timing(job_id)
     try:
         # Step 1: Crawl channels
         log.info(f"📡 Đang crawl channel {channel_id}")

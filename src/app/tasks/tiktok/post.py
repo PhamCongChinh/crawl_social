@@ -8,6 +8,8 @@ from app.modules.elastic_search.service import postToES
 from app.modules.tiktok_scraper.models.channel import ChannelModel
 from app.modules.tiktok_scraper.scrapers.post import scrape_posts
 from app.modules.tiktok_scraper.services.channel import ChannelService
+from app.utils.concurrency import limited_gather
+from app.utils.delay import async_delay
 from app.worker import celery_app
 
 import logging
@@ -18,67 +20,72 @@ from app.config import mongo_connection
 
 @celery_app.task(
     name="app.tasks.tiktok.post.crawl_tiktok_posts",
-    autoretry_for=(Exception,),
-    retry_backoff=True,
-    retry_kwargs={'max_retries': 3}
+    bind=True
 )
-def crawl_tiktok_posts(job_id: str, channel_id: str):
+def crawl_tiktok_posts(self, job_id: str, channel_id: str):
     print(f"Task {job_id} - {channel_id}")
     async def do_crawl():
         try:
             await mongo_connection.connect()
-            channels = await ChannelService.get_all_channels()
+            channels = await ChannelService.get_channels_crawl()
             log.info(f"🚀 Đang cào {len(channels)}")
-            for channel in channels:
-                log.info(f"🚀 Đang cào {channel.source_url}")
+            # Trong hàm async
+            coroutines = []
+            for idx, channel in enumerate(channels):
+                log.info(f"🕐 [{idx+1}/{len(channels)}] {channel.id}")
                 data = channel.model_dump(by_alias=True)
                 data["_id"] = str(data["_id"])
-                crawl_tiktok_post.delay(data)
+                coroutines.append(crawl_tiktok_post_direct(data))
+            # Giới hạn 3 request Scrapfly chạy cùng lúc
+            await limited_gather(coroutines, limit=3)
+
         except Exception as e:
             log.error(e)
     return asyncio.run(do_crawl())
 
-@celery_app.task(
-    name="app.tasks.tiktok.post.crawl_tiktok_post"
-)
-def crawl_tiktok_post(channel: dict):
-    async def do_crawl():
+async def crawl_tiktok_post_direct(channel: dict):
+    try:
+        await mongo_connection.connect()
+        channel_model = ChannelModel(**channel)
+
+        log.info(f"🔍 Crawling source: {channel_model.id}")
+        
+        data = await safe_scrape_with_delay(channel_model.id)
+        # data = await scrape_posts([channel_model.id])
+
+        if not data or not data[0]:
+            log.warning(f"⚠️ Không lấy được dữ liệu từ {channel_model.id}")
+            return
+
+        post = flatten_post_data(data[0], channel=channel_model)
+        log.info(f"✅ Thêm vào flatten: {post.get('id')}")
+
+        await postToES([post])
+        await ChannelService.channel_crawled(channel_model.id)
+
+        # result = await Pos.upsert_channels_bulk(data, channel=channel_model)
+        # log.info(
+        #     f"✅ Upsert xong {channel_model.source_url}: matched={result.matched_count}, "
+        #     f"inserted={result.upserted_count}, modified={result.modified_count}"
+        # )
+        return {"status": "success"}
+    except Exception as e:
+        log.error(f"❌ Lỗi crawl {post.get('source_url')}: {e}")
+
+
+async def safe_scrape_with_delay(url: str, max_retries: int = 3):
+    for attempt in range(1, max_retries + 1):
         try:
-            await mongo_connection.connect()
-            channel_model = ChannelModel(**channel)
-            log.warning(f"🚀 Crawling source {channel_model.id}")
-            data = await scrape_posts(urls=[channel_model.id])
-
-            # Nếu scrape_posts trả về dict lỗi
-            if isinstance(data, dict) and data.get("status") == "error":
-                log.error(f"❌ Scrap lỗi: {data}")
-                return data
-            
-            if not data or len(data) == 0:
-                log.error(f"❌ Không có dữ liệu từ channel {channel_model.id}")
-                return {
-                    "status": "error",
-                    "url": channel_model.source_url,
-                    "message": "Không có dữ liệu",
-                    "type": "NoData",
-                }
-
-            # Xử lý post đầu tiên
-            post = flatten_post_data(data[0], channel=channel_model)
-            log.info(f"✅ Thêm vào flatten: {post.get('id')}")
-            
-            await postToES([post])
-            await ChannelService.channel_crawled(channel_model.id)
-            return {"status": "success", "id": post.get("id")}
+            data = await scrape_posts([url])
+            await async_delay(2, 4)  # Đảm bảo browser session trước shutdown
+            return data
         except Exception as e:
-            log.exception(f"❌ Lỗi khi crawl {channel.get('id')}")
-            return {
-                "status": "error",
-                "url": channel.get("source_url", "unknown"),
-                "message": str(e),
-                "type": type(e).__name__,
-            }
-    return asyncio.run(do_crawl())
+            log.warning(f"❗ Attempt {attempt}/{max_retries} - Lỗi scrape: {e}")
+            if attempt < max_retries:
+                await async_delay(5, 8)  # Delay lâu hơn nếu lỗi
+            else:
+                log.error(f"❌ Bỏ qua URL sau {max_retries} lần thử: {url}")
+                return None
 
 VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
 

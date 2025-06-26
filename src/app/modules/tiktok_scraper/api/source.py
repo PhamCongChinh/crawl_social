@@ -12,7 +12,7 @@ from app.modules.tiktok_scraper.services.source import SourceService
 router = APIRouter()
 
 @router.get("/sources")
-async def get_all_sources():
+async def get_sources():
     try:
         log.info("Đang lấy dữ liệu Sources")
         sources = await SourceService.get_sources()
