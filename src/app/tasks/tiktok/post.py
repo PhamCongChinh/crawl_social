@@ -65,9 +65,9 @@ def crawl_tiktok_posts(self, job_id: str, channel_id: str):
                 data = channel.model_dump(by_alias=True)
                 data["_id"] = str(data["_id"])
                 coroutines.append(crawl_tiktok_post_direct(data))
-                break
+                await async_delay(1,2)
             # Giới hạn 3 request Scrapfly chạy cùng lúc
-            await limited_gather(coroutines, limit=2)
+            await limited_gather(coroutines, limit=3)
 
         except Exception as e:
             log.error(e)
@@ -109,7 +109,7 @@ async def crawl_tiktok_post_direct(channel: dict):
         # log.info(f"✅ Thêm vào flatten: {comment.get('id')}")
 
         await postToES([post])
-        await async_delay(1,2)
+        await async_delay(2,3)
         # await postToES([comment])
         await ChannelService.channel_crawled(channel_model.id)
 
