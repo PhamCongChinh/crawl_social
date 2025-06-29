@@ -31,6 +31,19 @@ def parse_post(response: ScrapeApiResponse) -> Dict:
     )
     return parsed_post_data
 
+# async def scrape_posts(urls: List[str]) -> List[Dict]:
+#     """scrape tiktok posts data from their URLs"""
+#     to_scrape = [ScrapeConfig(
+#         url, 
+#         **BASE_CONFIG,
+#         render_js=True) for url in urls]
+#     data = []
+#     async for response in SCRAPFLY.concurrent_scrape(to_scrape):
+#         post_data = parse_post(response)
+#         data.append(post_data)
+#     log.info(f"scraped {len(data)} posts from post pages")
+#     return data
+
 async def scrape_posts(urls: List[str]) -> List[Dict]:
     """scrape tiktok posts data from their URLs"""
     to_scrape = [ScrapeConfig(

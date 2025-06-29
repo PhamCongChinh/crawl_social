@@ -10,7 +10,6 @@ from app.worker import celery_app
 
 import logging
 
-from app.utils.safe_scrape import safe_scrape
 log = logging.getLogger(__name__)
 
 from app.modules.tiktok_scraper.models.source import SourceModel

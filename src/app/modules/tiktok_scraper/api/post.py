@@ -37,14 +37,6 @@ async def crawl_posts():
         job_id = "tiktok"
         channel_id = "tiktok"
         crawl_tiktok_posts.delay(job_id, channel_id)
-        # channels = await ChannelService.get_channels()
-        # for channel in channels:
-        #     # Dùng `.dict()` nếu là Pydantic object
-        #     data = channel.model_dump(by_alias=True)
-        #     # Chuyển ObjectId về string
-        #     data["_id"] = str(data["_id"])
-        #     # crawl_tiktok_posts.delay(data)
-        # return {"status": "submitted", "total": len(channels)}
     except Exception as e:
         return {"status": "error", "message": str(e)}
     
@@ -101,8 +93,10 @@ def flatten_post_data(raw: dict, channel: ChannelModel) -> dict:
         "views": raw.get("stats", {}).get("playCount", 0),
         # "web_tags": ", ".join(raw.get("diversificationLabels", [])),  #khong duoc rông
         # "web_keywords": "",#khong duoc rông
-        "web_tags": json.dumps(raw.get("diversificationLabels", [])),
-        "web_keywords": json.dumps(raw.get("suggestedWords", [])),
+        # "web_tags": json.dumps(raw.get("diversificationLabels", [])),
+        # "web_keywords": json.dumps(raw.get("suggestedWords", [])),
+        "web_tags": "[]",
+        "web_keywords": "[]",
         "auth_id": raw.get("author", {}).get("id", ""),
         "auth_name": raw.get("author", {}).get("nickname", ""),
         "auth_type": 1,

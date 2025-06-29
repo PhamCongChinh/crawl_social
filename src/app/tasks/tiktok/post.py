@@ -6,8 +6,10 @@ from zoneinfo import ZoneInfo
 from bson import Int64
 from app.modules.elastic_search.service import postToES
 from app.modules.tiktok_scraper.models.channel import ChannelModel
+from app.modules.tiktok_scraper.scrapers.comment import scrape_comments
 from app.modules.tiktok_scraper.scrapers.post import scrape_posts
 from app.modules.tiktok_scraper.services.channel import ChannelService
+from app.modules.tiktok_scraper.services.post import PostService
 from app.utils.concurrency import limited_gather
 from app.utils.delay import async_delay
 from app.worker import celery_app
@@ -29,6 +31,33 @@ def crawl_tiktok_posts(self, job_id: str, channel_id: str):
             await mongo_connection.connect()
             channels = await ChannelService.get_channels_crawl()
             log.info(f"🚀 Đang cào {len(channels)}")
+
+            # Đợt 2
+            # channel_infos = [{
+            #     "id": c.id,
+            #     "org_id": c.org_id,
+            #     "source_channel": c.source_channel,
+            #     "source_name": c.source_name,
+            #     "source_type": c.source_type,
+            #     "source_url": c.source_url
+            # } for c in channels] # dict
+
+            # urls = [c["id"] for c in channel_infos]
+            # print(channel_infos)
+            # scraped_posts = await scrape_posts(urls)
+
+            # # Gộp lại id và post_data theo thứ tự
+            # results = []
+            # for info, post in zip(channel_infos, scraped_posts):
+            #     results.append({
+            #         "channel_id": info["id"],
+            #         "source_url": info["source_url"],
+            #         "post_data": post,
+            #         "job_id": job_id
+            #     })
+            # print(results)
+
+
             # Trong hàm async
             coroutines = []
             for idx, channel in enumerate(channels):
@@ -36,8 +65,9 @@ def crawl_tiktok_posts(self, job_id: str, channel_id: str):
                 data = channel.model_dump(by_alias=True)
                 data["_id"] = str(data["_id"])
                 coroutines.append(crawl_tiktok_post_direct(data))
+                break
             # Giới hạn 3 request Scrapfly chạy cùng lúc
-            await limited_gather(coroutines, limit=3)
+            await limited_gather(coroutines, limit=2)
 
         except Exception as e:
             log.error(e)
@@ -51,26 +81,47 @@ async def crawl_tiktok_post_direct(channel: dict):
         log.info(f"🔍 Crawling source: {channel_model.id}")
         
         data = await safe_scrape_with_delay(channel_model.id)
-        # data = await scrape_posts([channel_model.id])
-
+        # data = await safe_scrape_with_delay("https://www.tiktok.com/@vietjetcareers/video/7520101154609483015")
+        
         if not data or not data[0]:
             log.warning(f"⚠️ Không lấy được dữ liệu từ {channel_model.id}")
             return
+        
+        await async_delay(2,4)
+
+        # comments = await safe_scrape_with_delay_comments(channel_model.id) # Trả 1 list comment
+        # comments = await safe_scrape_with_delay_comments("https://www.tiktok.com/@vietjetvietnam/video/7520222989380553992")
+        # if not comments or not comments[0]:
+        #     log.warning(f"⚠️ Không lấy được dữ liệu comments từ {channel_model.id}")
+        #     return
+        # comments_to_es = []
+        # for comment in comments:
+        #     c = flatten_post_data_comment(comment, channel=channel_model)
+        #     comments_to_es.append(c)
+        # await async_delay(1,2)
+        # print(comments_to_es)
+        # await postToES(comments_to_es)
 
         post = flatten_post_data(data[0], channel=channel_model)
         log.info(f"✅ Thêm vào flatten: {post.get('id')}")
 
+        # comment = flatten_post_data_comment(comments[0], channel=channel_model)
+        # log.info(f"✅ Thêm vào flatten: {comment.get('id')}")
+
         await postToES([post])
+        await async_delay(1,2)
+        # await postToES([comment])
         await ChannelService.channel_crawled(channel_model.id)
 
-        # result = await Pos.upsert_channels_bulk(data, channel=channel_model)
+        result = await PostService.upsert_posts_bulk(data, channel=channel_model)
         # log.info(
         #     f"✅ Upsert xong {channel_model.source_url}: matched={result.matched_count}, "
         #     f"inserted={result.upserted_count}, modified={result.modified_count}"
         # )
         return {"status": "success"}
     except Exception as e:
-        log.error(f"❌ Lỗi crawl {post.get('source_url')}: {e}")
+        # log.error(f"❌ Lỗi crawl {post.get('source_url')}: {e}")
+        log.error(e)
 
 
 async def safe_scrape_with_delay(url: str, max_retries: int = 3):
@@ -86,15 +137,29 @@ async def safe_scrape_with_delay(url: str, max_retries: int = 3):
             else:
                 log.error(f"❌ Bỏ qua URL sau {max_retries} lần thử: {url}")
                 return None
+            
+async def safe_scrape_with_delay_comments(url: str, max_retries: int = 3):
+    for attempt in range(1, max_retries + 1):
+        try:
+            data = await scrape_comments(url)
+            await async_delay(2, 4)  # Đảm bảo browser session trước shutdown
+            return data
+        except Exception as e:
+            log.warning(f"❗ Attempt {attempt}/{max_retries} - Lỗi scrape: {e}")
+            if attempt < max_retries:
+                await async_delay(5, 8)  # Delay lâu hơn nếu lỗi
+            else:
+                log.error(f"❌ Bỏ qua URL sau {max_retries} lần thử: {url}")
+                return None
 
 VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
 
 def flatten_post_data(raw: dict, channel: ChannelModel) -> dict:
     return {
-        "id": f"https://www.tiktok.com/@{raw.get('author', {}).get('uniqueId', '')}/video/{raw['id']}",
+        "id": raw.get("id", ""),
         "doc_type": 1, # POST = 1, COMMENT = 2
         "crawl_source": 2,
-        "crawl_source_code": "tt",
+        "crawl_source_code": channel.source_channel,
         "pub_time": Int64(int(raw.get("createTime", 0))),
         "crawl_time": int(datetime.now(VN_TZ).timestamp()),
         "org_id": channel.org_id,
@@ -104,7 +169,8 @@ def flatten_post_data(raw: dict, channel: ChannelModel) -> dict:
         "content": raw.get("desc", ""),
         "url": f"https://www.tiktok.com/@{raw.get('author', {}).get('uniqueId', '')}/video/{raw['id']}",
         # "media_urls": raw.get("video", {}).get("media_urls", ""),#khong duoc rông
-        "media_urls": json.dumps(raw.get("media_urls", [])),
+        # "media_urls": json.dumps(raw.get("media_urls", [])),
+        "media_urls": "[]",
         "comments": raw.get("stats", {}).get("commentCount", 0),
         "shares": raw.get("stats", {}).get("shareCount", 0),
         "reactions": raw.get("stats", {}).get("diggCount", 0),
@@ -112,8 +178,10 @@ def flatten_post_data(raw: dict, channel: ChannelModel) -> dict:
         "views": raw.get("stats", {}).get("playCount", 0),
         # "web_tags": ", ".join(raw.get("diversificationLabels", [])),  #khong duoc rông
         # "web_keywords": "",#khong duoc rông
-        "web_tags": json.dumps(raw.get("diversificationLabels", [])),
-        "web_keywords": json.dumps(raw.get("suggestedWords", [])),
+        # "web_tags": json.dumps(raw.get("diversificationLabels", [])),
+        # "web_keywords": json.dumps(raw.get("suggestedWords", [])),
+        "web_tags": "[]",
+        "web_keywords": "[]",
         "auth_id": raw.get("author", {}).get("id", ""),
         "auth_name": raw.get("author", {}).get("nickname", ""),
         "auth_type": 1,
@@ -127,4 +195,42 @@ def flatten_post_data(raw: dict, channel: ChannelModel) -> dict:
         "sentiment": 0,
         "isPriority": True,
         "crawl_bot": "tiktok_post",
+    }
+
+
+def flatten_post_data_comment(raw: dict, channel: ChannelModel) -> dict:
+    return {
+        "id": raw.get("cid", ""),
+        "doc_type": 2, # POST = 1, COMMENT = 2
+        "crawl_source": 2,
+        "crawl_source_code": channel.source_channel,
+        "pub_time": Int64(int(raw.get("create_time", 0))),
+        "crawl_time": int(datetime.now(VN_TZ).timestamp()),
+        "org_id": channel.org_id,
+        "subject_id": "",
+        "title": "",
+        "description": raw.get("text", ""),
+        "content": raw.get("text", ""),
+        "url": f"https://www.tiktok.com/@{raw.get('unique_id')}",
+        "media_urls": "[]",
+        "comments": 0,
+        "shares": 0,
+        "reactions": raw.get("digg_count", 0),
+        "favors": 0,
+        "views": 0,
+        "web_tags": "[]",
+        "web_keywords": "[]",
+        "auth_id": raw.get("unique_id", ""),
+        "auth_name": raw.get("nickname", ""),
+        "auth_type": 1,
+        "auth_url": "",
+        "source_id": raw.get("cid", ""),
+        "source_type": 5,
+        "source_name": raw.get("nickname", ""),
+        "source_url": channel.source_url,
+        "reply_to": "",
+        "level": 0 ,
+        "sentiment": 0,
+        "isPriority": True,
+        "crawl_bot": "tiktok_comment",
     }
