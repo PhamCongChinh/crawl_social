@@ -22,9 +22,10 @@ class ChannelService:
     async def get_channels():
         return await ChannelModel.find_all().to_list()
 
+    
     @staticmethod
     async def get_channels_crawl():
-        return await ChannelModel.find((ChannelModel.crawled == 0) & (ChannelModel.createTime >= 1750876800)).to_list()
+        return await ChannelModel.find(ChannelModel.crawled == 0).to_list()
     
     @staticmethod
     async def delele_channel(id: str):
