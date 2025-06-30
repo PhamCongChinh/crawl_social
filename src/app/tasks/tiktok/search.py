@@ -8,6 +8,7 @@ from bson import Int64
 
 from app.modules.elastic_search.service import postToES, postToESUnclassified
 from app.modules.tiktok_scraper.scrapers.search import scrape_search
+from app.modules.tiktok_scraper.scrapers.search_vietnamese import scrape_search_vietnam
 log = logging.getLogger(__name__)
 
 from app.config import mongo_connection
@@ -22,11 +23,13 @@ def crawl_tiktok_search(self, job_id: str, channel_id: str):
     async def do_crawl():
         try:
             await mongo_connection.connect()
-            search = await scrape_search(keyword="T&T GROUP", max_search=18)
+            # search = await scrape_search(keyword="Đỗ Mỹ Linh", max_search=18)
+            search = await scrape_search_vietnam(keyword="Đỗ Mỹ Linh", max_search=18)
             data = flatten_post_list(search)
+            print(json.dumps(data, indent=2, ensure_ascii=False))
 
             # await postToESUnclassified(data)
-            await postToES(data)
+            # await postToES(data)
         except Exception as e:
             log.error(e)
     return asyncio.run(do_crawl())
