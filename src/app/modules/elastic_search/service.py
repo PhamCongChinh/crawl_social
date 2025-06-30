@@ -1,10 +1,10 @@
 import httpx
 import requests
 
-ROOT_URL_TEMP = 'http://103.97.125.64:8900/api/elastic/insert-posts'
+URL_ETL_CLASSIFIED = 'http://103.97.125.64:8900/api/elastic/insert-posts'
+URL_ETL_UNCLASSIFIED = 'http://103.97.125.64:8900/api/elastic/insert-unclassified-org-posts'
 
 async def postToES(content: any):
-    print(content)
     data = {
         "index": "facebook_raw_posts",
         "data": content,
@@ -12,7 +12,26 @@ async def postToES(content: any):
     }
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.post(ROOT_URL_TEMP, json=data)  # URL FastAPI endpoint của bạn
+            response = await client.post(URL_ETL_CLASSIFIED, json=data)  # URL FastAPI endpoint của bạn
+            response.raise_for_status()
+            res_data = response.json()
+            return res_data
+    except httpx.HTTPStatusError as e:
+        print(f"[ERROR] Insert failed: {e.response.status_code} - {e.response.text}")
+        return {"successes": 0, "errors": [{"error": str(e)}]}
+    except Exception as e:
+        print(f"[ERROR] Insert exception: {e}")
+        return {"successes": 0, "errors": [{"error": str(e)}]}
+    
+async def postToESUnclassified(content: any):
+    data = {
+        "index": "not_classify_org_posts",
+        "data": content,
+        "upsert": True
+    }
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(URL_ETL_CLASSIFIED, json=data)  # URL FastAPI endpoint của bạn
             response.raise_for_status()
             res_data = response.json()
             return res_data

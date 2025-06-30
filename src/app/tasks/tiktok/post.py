@@ -32,32 +32,6 @@ def crawl_tiktok_posts(self, job_id: str, channel_id: str):
             channels = await ChannelService.get_channels_crawl()
             log.info(f"🚀 Đang cào {len(channels)}")
 
-            # Đợt 2
-            # channel_infos = [{
-            #     "id": c.id,
-            #     "org_id": c.org_id,
-            #     "source_channel": c.source_channel,
-            #     "source_name": c.source_name,
-            #     "source_type": c.source_type,
-            #     "source_url": c.source_url
-            # } for c in channels] # dict
-
-            # urls = [c["id"] for c in channel_infos]
-            # print(channel_infos)
-            # scraped_posts = await scrape_posts(urls)
-
-            # # Gộp lại id và post_data theo thứ tự
-            # results = []
-            # for info, post in zip(channel_infos, scraped_posts):
-            #     results.append({
-            #         "channel_id": info["id"],
-            #         "source_url": info["source_url"],
-            #         "post_data": post,
-            #         "job_id": job_id
-            #     })
-            # print(results)
-
-
             # Trong hàm async
             coroutines = []
             for idx, channel in enumerate(channels):
@@ -65,7 +39,7 @@ def crawl_tiktok_posts(self, job_id: str, channel_id: str):
                 data = channel.model_dump(by_alias=True)
                 data["_id"] = str(data["_id"])
                 coroutines.append(crawl_tiktok_post_direct(data))
-                await async_delay(1,2)
+                await async_delay(0,1)
             # Giới hạn 3 request Scrapfly chạy cùng lúc
             await limited_gather(coroutines, limit=3)
 
@@ -81,7 +55,6 @@ async def crawl_tiktok_post_direct(channel: dict):
         log.info(f"🔍 Crawling source: {channel_model.id}")
         
         data = await safe_scrape_with_delay(channel_model.id)
-        # data = await safe_scrape_with_delay("https://www.tiktok.com/@vietjetcareers/video/7520101154609483015")
         
         if not data or not data[0]:
             log.warning(f"⚠️ Không lấy được dữ liệu từ {channel_model.id}")
