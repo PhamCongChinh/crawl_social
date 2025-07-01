@@ -42,7 +42,7 @@ def crawl_tiktok_posts(self, job_id: str, channel_id: str):
                 await async_delay(0,1)
                 break
             # Giới hạn 3 request Scrapfly chạy cùng lúc
-            await limited_gather(coroutines, limit=3)
+            await limited_gather(coroutines, limit=1)
 
         except Exception as e:
             log.error(e)
@@ -79,7 +79,7 @@ async def crawl_tiktok_post_direct(channel: dict):
         # Phân loại ở đây
         if channel_model.org_id == 0:
             post = flatten_post_data_unclassified(data[0], channel=channel_model)
-            log.info(f"✅ Thêm vào flatten org_id = 0: {post.get('id')}")
+            log.info(f"✅ Thêm vào flatten org_id = 0: {channel_model.id}")
             await postToESUnclassified([post])
             
         else:

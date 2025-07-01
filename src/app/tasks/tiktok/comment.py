@@ -37,9 +37,8 @@ def crawl_tiktok_comments(self, job_id: str, channel_id: str):
                 data = channel.model_dump(by_alias=True)
                 data["_id"] = str(data["_id"])
                 coroutines.append(crawl_tiktok_comment_direct(data))
-                await async_delay(0,1)
             # Giới hạn 3 request Scrapfly chạy cùng lúc
-            await limited_gather(coroutines, limit=3)
+            await limited_gather(coroutines, limit=2)
 
         except Exception as e:
             log.error(e)
