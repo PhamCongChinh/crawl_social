@@ -38,7 +38,6 @@ def crawl_tiktok_comments(self, job_id: str, channel_id: str):
                 data["_id"] = str(data["_id"])
                 coroutines.append(crawl_tiktok_comment_direct(data))
                 await async_delay(0,1)
-                break  # Tạm thời chỉ crawl 1 channel để test
             # Giới hạn 3 request Scrapfly chạy cùng lúc
             await limited_gather(coroutines, limit=3)
 
@@ -61,20 +60,19 @@ async def crawl_tiktok_comment_direct(channel: dict):
         
         await async_delay(2,4)
         comment = flatten_post_list(data, channel=channel_model)
-        log.info(comment)
-        # # await postToES([comment])
-        # await async_delay(2,3)
+        log.info("comment: " + str(comment))
+        await postToES(comment)
+        await async_delay(2,3)
         # # await ChannelService.channel_crawled(channel_model.id)
 
         # result = await PostService.upsert_posts_bulk(data, channel=channel_model)
         
         return {"status": "success"}
     except Exception as e:
-        # log.error(f"❌ Lỗi crawl {post.get('source_url')}: {e}")
         log.error(e)
 
 def flatten_post_data_comment(raw: dict, channel: ChannelModel) -> dict:
-    print(f"Flattening comment data for {raw.get('unique_id', 'unknown')}")
+    print(f"chuyển đổi dữ liệu {raw.get('unique_id', 'unknown')}")
     return {
         "id": raw.get("cid", ""),
         "doc_type": 2, # POST = 1, COMMENT = 2
@@ -112,9 +110,7 @@ def flatten_post_data_comment(raw: dict, channel: ChannelModel) -> dict:
     }
 
 def flatten_post_list(raw_list: list[dict], channel: ChannelModel) -> list[dict]:
-    print(f"Flattening {len(raw_list)} comments for channel {channel.id}")
-    # print(raw_list)
-    # return [flatten_post_data_comment(item, channel) for item in raw_list]
+    print(f"Đang crawl {len(raw_list)} comments for channel {channel.id}")
     flattened = []
     for item in raw_list:
         if not isinstance(item, dict):
@@ -126,5 +122,5 @@ def flatten_post_list(raw_list: list[dict], channel: ChannelModel) -> list[dict]
             flattened.append(flat)
         except Exception as e:
             print(f"⚠️ Lỗi khi flatten item: {e}")
-    print(f"Flattened {len(flattened)} comments for channel {channel.id}")
+    print(f"Đã crawl {len(flattened)} comments for channel {channel.id}")
     return flattened

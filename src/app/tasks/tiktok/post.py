@@ -137,7 +137,7 @@ def flatten_post_data(raw: dict, channel: ChannelModel) -> dict:
         "crawl_time": int(datetime.now(VN_TZ).timestamp()),
         "org_id": channel.org_id,
         "subject_id": "",
-        "title": "",
+        "title": raw.get("desc", ""),
         "description": raw.get("desc", ""),
         "content": raw.get("desc", ""),
         "url": f"https://www.tiktok.com/@{raw.get('author', {}).get('uniqueId', '')}/video/{raw['id']}",

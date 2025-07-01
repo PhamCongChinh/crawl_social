@@ -5,6 +5,7 @@ URL_ETL_CLASSIFIED = 'http://103.97.125.64:8900/api/elastic/insert-posts'
 URL_ETL_UNCLASSIFIED = 'http://103.97.125.64:8900/api/elastic/insert-unclassified-org-posts'
 
 async def postToES(content: any):
+    print(f"[INFO] Posting to ES: {content}")
     data = {
         "index": "facebook_raw_posts",
         "data": content,
