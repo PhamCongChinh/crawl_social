@@ -32,7 +32,7 @@ async def postToESUnclassified(content: any):
     }
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.post(URL_ETL_CLASSIFIED, json=data)  # URL FastAPI endpoint của bạn
+            response = await client.post(URL_ETL_UNCLASSIFIED, json=data)  # URL FastAPI endpoint của bạn
             response.raise_for_status()
             res_data = response.json()
             return res_data

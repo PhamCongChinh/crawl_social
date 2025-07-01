@@ -4,7 +4,7 @@ import json
 from zoneinfo import ZoneInfo
 
 from bson import Int64
-from app.modules.elastic_search.service import postToES
+from app.modules.elastic_search.service import postToES, postToESUnclassified
 from app.modules.tiktok_scraper.models.channel import ChannelModel
 from app.modules.tiktok_scraper.scrapers.comment import scrape_comments
 from app.modules.tiktok_scraper.scrapers.post import scrape_posts
@@ -40,6 +40,7 @@ def crawl_tiktok_posts(self, job_id: str, channel_id: str):
                 data["_id"] = str(data["_id"])
                 coroutines.append(crawl_tiktok_post_direct(data))
                 await async_delay(0,1)
+                break
             # Giới hạn 3 request Scrapfly chạy cùng lúc
             await limited_gather(coroutines, limit=3)
 
@@ -75,18 +76,26 @@ async def crawl_tiktok_post_direct(channel: dict):
         # print(comments_to_es)
         # await postToES(comments_to_es)
 
-        post = flatten_post_data(data[0], channel=channel_model)
-        log.info(f"✅ Thêm vào flatten: {post.get('id')}")
+        # Phân loại ở đây
+        if channel_model.org_id == 0:
+            post = flatten_post_data_unclassified(data[0], channel=channel_model)
+            log.info(f"✅ Thêm vào flatten org_id = 0: {post.get('id')}")
+            await postToESUnclassified([post])
+            
+        else:
+            post = flatten_post_data(data[0], channel=channel_model)
+            log.info(f"✅ Thêm vào flatten org_id != 0: {post.get('id')}")
+            await postToES([post])
 
+        await async_delay(2,3)
         # comment = flatten_post_data_comment(comments[0], channel=channel_model)
         # log.info(f"✅ Thêm vào flatten: {comment.get('id')}")
 
-        await postToES([post])
-        await async_delay(2,3)
+        
         # await postToES([comment])
-        await ChannelService.channel_crawled(channel_model.id)
+        # await ChannelService.channel_crawled(channel_model.id)
 
-        result = await PostService.upsert_posts_bulk(data, channel=channel_model)
+        # result = await PostService.upsert_posts_bulk(data, channel=channel_model)
         # log.info(
         #     f"✅ Upsert xong {channel_model.source_url}: matched={result.matched_count}, "
         #     f"inserted={result.upserted_count}, modified={result.modified_count}"
@@ -206,4 +215,43 @@ def flatten_post_data_comment(raw: dict, channel: ChannelModel) -> dict:
         "sentiment": 0,
         "isPriority": True,
         "crawl_bot": "tiktok_comment",
+    }
+
+def flatten_post_data_unclassified (raw: dict, channel: ChannelModel) -> dict:
+    return {
+        "id": None,#raw.get("id", ""),
+        "doc_type": 1, # POST = 1, COMMENT = 2
+        "crawl_source": 2,
+        "crawl_source_code": channel.source_channel,
+        "pub_time": Int64(int(raw.get("createTime", 0))),
+        "crawl_time": int(datetime.now(VN_TZ).timestamp()),
+        "org_id": None,#channel.org_id,
+        "subject_id": "",
+        "title": raw.get("desc", ""),
+        "description": raw.get("desc", ""),
+        "content": raw.get("desc", ""),
+        "url": f"https://www.tiktok.com/@{raw.get('author', {}).get('uniqueId', '')}/video/{raw['id']}",
+        "media_urls": "[]",
+        "comments": raw.get("stats", {}).get("commentCount", 0),
+        "shares": raw.get("stats", {}).get("shareCount", 0),
+        "reactions": raw.get("stats", {}).get("diggCount", 0),
+        "favors": int(raw.get("stats", {}).get("collectCount", 0) or 0),
+        "views": raw.get("stats", {}).get("playCount", 0),
+        "web_tags": json.dumps(raw.get("diversificationLabels", [])),
+        "web_keywords": json.dumps(raw.get("suggestedWords", [])),
+        # "web_tags": "[]",
+        # "web_keywords": "[]",
+        "auth_id": raw.get("author", {}).get("id", ""),
+        "auth_name": raw.get("author", {}).get("nickname", ""),
+        "auth_type": 1,
+        "auth_url": f"https://www.tiktok.com/@{raw.get('author', {}).get('uniqueId', '')}",
+        "source_id": raw.get("id", ""),
+        "source_type": 5,
+        "source_name": raw.get("author", {}).get("nickname", ""),
+        "source_url": channel.source_url,
+        "reply_to": "",
+        "level": 0 ,
+        "sentiment": 0,
+        "isPriority": True,
+        "crawl_bot": "tiktok_post",
     }
