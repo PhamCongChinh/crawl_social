@@ -14,6 +14,8 @@ log = logging.getLogger(__name__)
 from app.config import mongo_connection
 from app.worker import celery_app
 
+VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
+
 @celery_app.task(
     name="app.tasks.tiktok.post.crawl_tiktok_search",
     bind=True
@@ -35,7 +37,7 @@ def crawl_tiktok_search(self, job_id: str, channel_id: str):
     return asyncio.run(do_crawl())
 
 
-VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
+
 
 def flatten_post_data(raw: dict) -> dict:
     return {
@@ -79,7 +81,6 @@ def flatten_post_data(raw: dict) -> dict:
         "isPriority": True,
         "crawl_bot": "tiktok_post",
     }
-
 
 def flatten_post_list(raw_list: list[dict]) -> list[dict]:
     return [flatten_post_data(item) for item in raw_list]
