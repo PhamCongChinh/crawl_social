@@ -39,8 +39,6 @@ def crawl_tiktok_posts(self, job_id: str, channel_id: str):
                 data = channel.model_dump(by_alias=True)
                 data["_id"] = str(data["_id"])
                 coroutines.append(crawl_tiktok_post_direct(data))
-                await async_delay(0,1)
-                break
             # Giới hạn 3 request Scrapfly chạy cùng lúc
             await limited_gather(coroutines, limit=1)
 
@@ -77,9 +75,11 @@ async def crawl_tiktok_post_direct(channel: dict):
         # await postToES(comments_to_es)
 
         # Phân loại ở đây
+        posts = []
         if channel_model.org_id == 0:
             post = flatten_post_data_unclassified(data[0], channel=channel_model)
             log.info(f"✅ Thêm vào flatten org_id = 0: {channel_model.id}")
+            print(f"post: {post}")
             await postToESUnclassified([post])
             
         else:
@@ -160,10 +160,10 @@ def flatten_post_data(raw: dict, channel: ChannelModel) -> dict:
         "views": raw.get("stats", {}).get("playCount", 0),
         # "web_tags": ", ".join(raw.get("diversificationLabels", [])),  #khong duoc rông
         # "web_keywords": "",#khong duoc rông
-        # "web_tags": json.dumps(raw.get("diversificationLabels", [])),
-        # "web_keywords": json.dumps(raw.get("suggestedWords", [])),
-        "web_tags": "[]",
-        "web_keywords": "[]",
+        "web_tags": json.dumps(raw.get("diversificationLabels", [])),
+        "web_keywords": json.dumps(raw.get("suggestedWords", [])),
+        # "web_tags": "[]",
+        # "web_keywords": "[]",
         "auth_id": raw.get("author", {}).get("id", ""),
         "auth_name": raw.get("author", {}).get("nickname", ""),
         "auth_type": 1,
@@ -219,13 +219,13 @@ def flatten_post_data_comment(raw: dict, channel: ChannelModel) -> dict:
 
 def flatten_post_data_unclassified (raw: dict, channel: ChannelModel) -> dict:
     return {
-        "id": None,#raw.get("id", ""),
+        "id": raw.get("id", ""),
         "doc_type": 1, # POST = 1, COMMENT = 2
         "crawl_source": 2,
         "crawl_source_code": channel.source_channel,
         "pub_time": Int64(int(raw.get("createTime", 0))),
         "crawl_time": int(datetime.now(VN_TZ).timestamp()),
-        "org_id": None,#channel.org_id,
+        # "org_id": None,#channel.org_id,
         "subject_id": "",
         "title": raw.get("desc", ""),
         "description": raw.get("desc", ""),

@@ -25,8 +25,8 @@ def crawl_tiktok_channels(self, job_id: str, channel_id: str):
     async def do_crawl():
         try:
             await mongo_connection.connect()
-            # sources = await SourceService.get_sources()
-            sources = await SourceService.get_source_by_id('6863f028626ad3bf681a27af')
+            sources = await SourceService.get_sources()
+            # sources = await SourceService.get_source_by_id('6863f028626ad3bf681a27af')
             log.info(f"📦 Tổng số source: {len(sources)}")
 
             # Trong hàm async
