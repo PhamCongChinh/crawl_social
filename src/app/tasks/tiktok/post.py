@@ -44,7 +44,7 @@ def crawl_tiktok_posts(self, job_id: str, channel_id: str):
             # await limited_gather(coroutines, limit=1)
 
             # Tuần tự
-            # LIMIT = 20
+            LIMIT = 50
             data_list = []
             data_list_unclassified = []
             for idx, channel in enumerate(channels):
@@ -60,9 +60,9 @@ def crawl_tiktok_posts(self, job_id: str, channel_id: str):
                     data_list.append(data)
                     log.info(f"Thêm vào classified: {data['_id']}")
 
-                # if idx + 1 >= LIMIT:
-                #     log.info(f"🛑 Đã xử lý {LIMIT} bài, dừng tạm.")
-                #     break
+                if idx + 1 >= LIMIT:
+                    log.info(f"🛑 Đã xử lý {LIMIT} bài, dừng tạm.")
+                    break
 
             if len(data_list) > 0:
                 log.info(f"📦 Tổng số channel classified: {len(data_list)}")
