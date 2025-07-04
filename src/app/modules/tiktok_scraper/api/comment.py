@@ -20,9 +20,16 @@ router = APIRouter()
 
 @router.get("/comments")
 async def get_comments():
-    url = f"https://www.tiktok.com/@officialhanoifc/video/7519445590686567688"
-    comments = await scrape_comments(url)
-    return comments
+    try:
+        log.info("Đang lấy dữ liệu Channels")
+        channels = await ChannelService.get_channels_crawl_comments()
+        if not channels:
+            raise HTTPException(status_code=204, detail="Không có dữ liệu")
+        log.info(f"Đã tìm thấy {len(channels)} bài viết trong cơ sở dữ liệu")
+        return channels
+    except Exception as e:
+        log.error(f"Lỗi khi lấy URLs: {e}")
+        raise HTTPException(status_code=500, detail="Không thể lấy danh sách URLs")
 
 @router.get("/comments/crawl")
 async def crawl_comments():

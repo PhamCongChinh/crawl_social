@@ -2,7 +2,7 @@ from fastapi import FastAPI
 
 from contextlib import asynccontextmanager
 from app.config import mongo_connection
-# from app.config import postgres_connection
+from app.config import postgres_connection
 
 from app.modules.scheduler.model import JobModel
 from app.modules.scheduler.service import scheduler, add_job
@@ -23,9 +23,10 @@ async def lifespan(app: FastAPI):
         if job.status == "active":
             await add_job(job)
 
-    # await postgres_connection.connect()
-    # log.info("Scheduler đã được bật")
+    await postgres_connection.connect()
+    log.info("Scheduler đã được bật")
     yield
-    # scheduler.shutdown()
+    scheduler.shutdown()
     await mongo_connection.disconnect()
+    await postgres_connection.disconnect()
     log.info("Tắt ...")

@@ -14,12 +14,12 @@ class Settings(BaseSettings):
     REDIS_BROKER_DB: int = 0
     REDIS_BACKEND_DB: int = 1
 
-    # POSTGRES_HOST: str = "localhost"
-    # POSTGRES_PORT: int = 5432
-    # POSTGRES_USER: str = "postgres"
-    # POSTGRES_PASSWORD: str = "your_password"
-    # POSTGRES_DB: str = "your_db"
-    # POSTGRES_SCHEMA: str = "public"
+    POSTGRES_HOST: str = "localhost"
+    POSTGRES_PORT: int = 5432
+    POSTGRES_USER: str = "postgres"
+    POSTGRES_PASSWORD: str = "your_password"
+    POSTGRES_DB: str = "your_db"
+    POSTGRES_SCHEMA: str = "public"
 
     @property
     def redis_broker_url(self) -> str:
@@ -29,14 +29,14 @@ class Settings(BaseSettings):
     def redis_backend_url(self) -> str:
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_BACKEND_DB}"
     
-    # @property
-    # def postgres_url(self):
-    #     return (
-    #         f"postgresql://{self.POSTGRES_USER}:"
-    #         f"{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:"
-    #         f"{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
-    #         f"?options=-csearch_path%3D{self.POSTGRES_SCHEMA}"
-    #     )
+    @property
+    def postgres_url(self):
+        return (
+            f"postgresql://{self.POSTGRES_USER}:"
+            f"{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:"
+            f"{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+            f"?options=-csearch_path%3D{self.POSTGRES_SCHEMA}"
+        )
 
     model_config = {
         "env_file": ".env"

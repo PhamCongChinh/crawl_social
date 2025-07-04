@@ -26,9 +26,7 @@ def crawl_tiktok_channels(self, job_id: str, channel_id: str):
         try:
             await mongo_connection.connect()
             sources = await SourceService.get_sources()
-            # sources = await SourceService.get_source_by_id('6863f028626ad3bf681a27af')
             log.info(f"📦 Tổng số source: {len(sources)}")
-
             # Trong hàm async
             coroutines = []
             for idx, source in enumerate(sources):
@@ -36,21 +34,9 @@ def crawl_tiktok_channels(self, job_id: str, channel_id: str):
                 data = source.model_dump(by_alias=True)
                 data["_id"] = str(data["_id"])
                 coroutines.append(crawl_tiktok_channel_direct(data))
-
             # Giới hạn 3 request Scrapfly chạy cùng lúc
-            await limited_gather(coroutines, limit=3)
-
-            # Tuần tự
-            # for index, source in enumerate(sources):
-            #     log.info(f"➡️ [{index+1}/{len(sources)}] Crawling: {source.source_url}")
-            #     data = source.model_dump(by_alias=True)
-            #     data["_id"] = str(data["_id"])
-
-            #     await crawl_tiktok_channel_direct(data)  # 🧠 TUẦN TỰ
-            #     # Không cần sleep vì hàm `safe_scrape_with_delay()` đã tự delay rồi
-
+            await limited_gather(coroutines, limit=1)
             log.info(f"✅ Task cha {job_id} hoàn tất toàn bộ")
-
         except Exception as e:
             log.error(e)
     return asyncio.run(do_crawl())
@@ -60,15 +46,11 @@ async def crawl_tiktok_channel_direct(source: dict):
     try:
         await mongo_connection.connect()
         source_model = SourceModel(**source)
-
         log.info(f"🔍 Crawling source: {source_model.source_url}")
-        
         data = await safe_scrape_with_delay(source_model.source_url)
-
         if not data:
             log.warning(f"⚠️ Không lấy được dữ liệu từ {source_model.source_url}")
             return
-
         result = await ChannelService.upsert_channels_bulk(data, source=source_model)
         log.info(
             f"✅ Upsert xong {source_model.source_url}: matched={result.matched_count}, "

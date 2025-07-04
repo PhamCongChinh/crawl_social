@@ -1,5 +1,5 @@
 from app.config.db_mongo import MongoDB
-# from app.config.db_postgresql import PostgresDB
+from app.config.db_postgresql import PostgresDB
 
 from app.modules.scheduler.model import JobModel
 from app.modules.scheduler.models.jobs_log import JobLog
@@ -17,4 +17,4 @@ mongo_connection = MongoDB(
     ]
 )
 
-# postgres_connection = PostgresDB()
+postgres_connection = PostgresDB()

@@ -14,19 +14,33 @@ from pymongo.errors import BulkWriteError
 
 log = logging.getLogger(__name__)
 
-from app.config import mongo_connection
+from app.config import mongo_connection, postgres_connection
 
 class ChannelService:
+
+    @staticmethod
+    async def get_posts_postgre():
+        query = "SELECT * FROM public.tbl_posts WHERE crawl_source_code = 'tt' AND pub_time >= 1750698000"
+        results = await postgres_connection.fetch_all(query)
+        print(f"Fetched {len(results)} sources from PostgreSQL")
+        return [dict(row) for row in results]  # optional: convert Record -> dict
 
     @staticmethod
     async def get_channels():
         return await ChannelModel.find_all().to_list()
 
-    
     @staticmethod
     async def get_channels_crawl():
         return await ChannelModel.find(ChannelModel.crawled == 0).to_list()
     
+    @staticmethod
+    async def get_channels_crawl_comments():
+        return await ChannelModel.find(ChannelModel.crawled == 1).to_list()
+    
+    @staticmethod
+    async def get_channel_by_id(channel_id: any):
+        return await ChannelModel.find_one(ChannelModel.desc == channel_id)
+
     @staticmethod
     async def delele_channel(id: str):
         await ChannelModel.find_one(ChannelModel.id == id).delete()
@@ -34,6 +48,10 @@ class ChannelService:
     @staticmethod
     async def channel_crawled(id: str):
         await ChannelModel.find_one(ChannelModel.id == id).update({"$set": {"crawled": 1}})
+
+    @staticmethod
+    async def channel_crawled_comments(id: str):
+        await ChannelModel.find_one(ChannelModel.id == id).update({"$set": {"crawled": 2}})
 
 
     @staticmethod
@@ -69,7 +87,7 @@ class ChannelService:
                         "updated_at": now,
                     },
                     "$setOnInsert": {
-                        "crawled": 0,
+                        "crawled": 0,  # 0: chưa crawl, 1: đã crawl, 2: đã crawl comments
                         "created_at": now
                     }
                 }
@@ -101,11 +119,11 @@ class ChannelService:
         result = await ChannelService.upsert_channels_bulk(data, source=source_model)
         
         return {
-        "status": "success",
-        "url": source_model.source_url,
-        "total": len(data),
-        "matched": result.matched_count,
-        "inserted": result.upserted_count,
-        "modified": result.modified_count
-    }
+            "status": "success",
+            "url": source_model.source_url,
+            "total": len(data),
+            "matched": result.matched_count,
+            "inserted": result.upserted_count,
+            "modified": result.modified_count
+        }
 

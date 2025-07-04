@@ -15,8 +15,8 @@ router = APIRouter()
 async def get_sources():
     try:
         log.info("Đang lấy dữ liệu Sources")
-        # sources = await SourceService.get_sources()
-        sources = await SourceService.get_source_by_id('6863f028626ad3bf681a27af')
+        sources = await SourceService.get_sources()
+        # sources = await SourceService.get_sources_postgre()
         if not sources:
             raise HTTPException(status_code=204, detail="Không có dữ liệu")
         # log.info(f"Đã tìm thấy {len(sources)} bài viết trong cơ sở dữ liệu")

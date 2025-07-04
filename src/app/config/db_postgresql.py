@@ -18,19 +18,19 @@ class PostgresDB:
         for attempt in range(1, retries + 1):
             try:
                 self.pool = await asyncpg.create_pool(dsn=self.dsn)
-                log.info("PostgreSQL pool connected")
+                log.info("PostgreSQL pool đã kết nối thành công")
                 return
             except Exception as e:
-                log.error(f"Connect attempt {attempt} failed: {e}")
+                log.error(f"Số lần thử kết nối {attempt} thất bại: {e}")
                 if attempt == retries:
-                    log.error("All attempts failed, exiting.")
+                    log.error("Tất cả các lần thử đều thất bại, thoát.")
                     exit(1)
                 await asyncio.sleep(delay)
 
     async def close(self):
         if self.pool:
             await self.pool.close()
-            log.info("PostgreSQL connection closed")
+            log.info("PostgreSQL kết nối đã đóng")
 
     async def fetch_all(self, query: str, *args):
         async with self.pool.acquire() as conn:
