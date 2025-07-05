@@ -20,9 +20,10 @@ async def get_channels():
     try:
         log.info("Đang lấy dữ liệu Channels")
         channels = await ChannelService.get_channels_crawl()
+        # channels = await ChannelService.get_videos_to_crawl()
         if not channels:
             raise HTTPException(status_code=204, detail="Không có dữ liệu")
-        # log.info(f"Đã tìm thấy {len(channels)} bài viết trong cơ sở dữ liệu")
+        log.info(f"Đã lấy được {len(channels)} kênh")
         return channels
     except Exception as e:
         log.error(f"Lỗi khi lấy URLs: {e}")

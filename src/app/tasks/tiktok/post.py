@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime
 import json
+from typing import List
 from zoneinfo import ZoneInfo
 
 from bson import Int64
@@ -31,6 +32,7 @@ def crawl_tiktok_posts(self, job_id: str, channel_id: str):
         try:
             await mongo_connection.connect()
             channels = await ChannelService.get_channels_crawl()
+            # channels = await ChannelService.get_videos_to_crawl()
             log.info(f"🚀 Đang cào {len(channels)}")
 
             # # Trong hàm async
@@ -44,47 +46,56 @@ def crawl_tiktok_posts(self, job_id: str, channel_id: str):
             # await limited_gather(coroutines, limit=1)
 
             # Tuần tự
-            LIMIT = 50
-            data_list = []
-            data_list_unclassified = []
-            for idx, channel in enumerate(channels):
-                log.info(f"🕐 [{idx+1}/{len(channels)}] {channel.id}")
-                data = channel.model_dump(by_alias=True)
-                data["_id"] = str(data["_id"])
-                if data["org_id"] == 0:
-                    # Nếu org_id = 0 thì post vào unclassified
-                    data_list_unclassified.append(data)
-                    log.info(f"Thêm vào unclassified: {data['_id']}")
-                else:
-                    # Nếu org_id != 0 thì post vào classified
-                    data_list.append(data)
-                    log.info(f"Thêm vào classified: {data['_id']}")
 
-                if idx + 1 >= LIMIT:
-                    log.info(f"🛑 Đã xử lý {LIMIT} bài, dừng tạm.")
-                    break
+            # LIMIT = 50
+            batch_size = 3  # Số lượng source mỗi lần crawl
+            batches = _chunk_sources(channels, batch_size)
+            log.info(f"📦 Chia thành {len(batches)} batch, mỗi batch {batch_size} nguồn")
+            for batch_index, batch in enumerate(batches, start=1):
+                log.info(f"🚀 Đang xử lý batch {batch_index}/{len(batches)} với {len(batch)} nguồn")
 
-            if len(data_list) > 0:
-                log.info(f"📦 Tổng số channel classified: {len(data_list)}")
-                # Gọi hàm xử lý 1 lần
-                post_data = await crawl_tiktok_post_list_direct(data_list) # Mục đích là có dữ liệu để post lên ES
-                if len(post_data) > 0:
-                    result = await postToES(post_data)
-                    log.info(f"✅ Đã post {len(post_data)} bài viết classified lên ES")
+                data_list = []
+                data_list_unclassified = []
+                for idx, channel in enumerate(channels):
+                    log.info(f"🕐 [{idx+1}/{len(channels)}] {channel.id}")
+                    data = channel.model_dump(by_alias=True)
+                    data["_id"] = str(data["_id"])
+                    if data["org_id"] == 0:
+                        # Nếu org_id = 0 thì post vào unclassified
+                        data_list_unclassified.append(data)
+                        log.info(f"Thêm vào unclassified: {data['_id']}")
+                    else:
+                        # Nếu org_id != 0 thì post vào classified
+                        data_list.append(data)
+                        log.info(f"Thêm vào classified: {data['_id']}")
+                    # if idx + 1 >= LIMIT:
+                    #     log.info(f"🛑 Đã xử lý {LIMIT} bài, dừng tạm.")
+                    #     break
 
-            if len(data_list_unclassified) > 0:
-                log.info(f"📦 Tổng số channel unclassified: {len(data_list_unclassified)}")
-                post_data_unclassified = await crawl_tiktok_post_list_direct_unclassified(data_list_unclassified)
-                print(f"post_data_unclassified: {post_data_unclassified}")
-                if len(post_data_unclassified) > 0:
-                    result_unclassified = await postToESUnclassified(post_data_unclassified)
-                log.info(f"✅ Đã post {len(post_data_unclassified)} bài viết unclassified lên ES")
+                if len(data_list) > 0:
+                    log.info(f"📦 Tổng số channel classified: {len(data_list)}")
+                    # Gọi hàm xử lý 1 lần
+                    post_data = await crawl_tiktok_post_list_direct(data_list) # Mục đích là có dữ liệu để post lên ES
+                    if len(post_data) > 0:
+                        result = await postToES(post_data)
+                        log.info(f"✅ Đã post {len(post_data)} bài viết classified lên ES")
+
+                if len(data_list_unclassified) > 0:
+                    log.info(f"📦 Tổng số channel unclassified: {len(data_list_unclassified)}")
+                    post_data_unclassified = await crawl_tiktok_post_list_direct_unclassified(data_list_unclassified)
+                    print(f"post_data_unclassified: {post_data_unclassified}")
+                    if len(post_data_unclassified) > 0:
+                        result_unclassified = await postToESUnclassified(post_data_unclassified)
+                    log.info(f"✅ Đã post {len(post_data_unclassified)} bài viết unclassified lên ES")
             
 
             return None
         except Exception as e:
             log.error(e)
     return asyncio.run(do_crawl())
+
+def _chunk_sources(sources: List, batch_size: int) -> List[List]:
+    return [sources[i:i + batch_size] for i in range(0, len(sources), batch_size)]
 
 async def crawl_tiktok_post_list_direct(channels: list[dict]):
     try:

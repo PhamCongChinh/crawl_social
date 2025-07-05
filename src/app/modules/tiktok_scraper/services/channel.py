@@ -54,6 +54,18 @@ class ChannelService:
         await ChannelModel.find_one(ChannelModel.id == id).update({"$set": {"crawled": 2}})
 
 
+
+    # Bắt đầu
+    @staticmethod
+    async def get_videos_to_crawl(limit=10):
+        # await mongo_connection.connect()
+        # videos = await mongo_connection.db["tiktok_channels"].find({
+        #     "crawled": 0,  # Chưa được crawl
+        # }).limit(limit).to_list(length=limit)
+        # return videos
+        return await ChannelModel.find(ChannelModel.crawled == 0).limit(limit).to_list()
+
+
     @staticmethod
     async def upsert_channels_bulk(channels: list[dict], source: SourceModel):
         try:
@@ -80,6 +92,7 @@ class ChannelService:
                 channel["updated_at"] = now
 
                 channel.pop("crawled", None)
+                channel.pop("status", None)
 
                 update_doc = {
                     "$set": {
@@ -88,6 +101,7 @@ class ChannelService:
                     },
                     "$setOnInsert": {
                         "crawled": 0,  # 0: chưa crawl, 1: đã crawl, 2: đã crawl comments
+                        "status": "pending",  # 0: chưa crawl, 1: đã crawl, 2: đã crawl comments
                         "created_at": now
                     }
                 }
@@ -127,3 +141,5 @@ class ChannelService:
             "modified": result.modified_count
         }
 
+# Mới
+    

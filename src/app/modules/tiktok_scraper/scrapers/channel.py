@@ -30,45 +30,33 @@ def parse_channel(response: ScrapeApiResponse):
             }""",
             post,
         )
-
-        # contents: contents[].{desc: desc, textExtra: textExtra[].{hashtagName: hashtagName}}Add commentMore actions
-        # # Có Hashtag
-        # content_str = " ".join([c for c in result.get("contents", []) if c])
-        # result["contents"] = content_str  # Gán lại contents thành chuỗi
-        
-        # content_descs = [desc for desc in result.get("contents", []) if desc]
-        # content_str = " ".join(content_descs)
-        # result["contents"] = content_str
-
         contents = result.get("contents", [])
         if isinstance(contents, list):
             result["contents"] = " ".join([x for x in contents if isinstance(x, str) and x.strip()])
         else:
             result["contents"] = str(contents or "")
-
         parsed_data.append(result)
-    
     return parsed_data
 
 async def scrape_channel(url: str) -> List[Dict]:
     """scrape video data from a channel (profile with videos)"""
     # js code for scrolling down with maximum 15 scrolls. It stops at the end without using the full iterations
     js = """const scrollToEnd = (i = 0) => (window.innerHeight + window.scrollY >= document.body.scrollHeight || i >= 15) ? (console.log("Reached the bottom or maximum iterations. Stopping further iterations."), setTimeout(() => console.log("Waited 10 seconds after all iterations."), 10000)) : (window.scrollTo(0, document.body.scrollHeight), setTimeout(() => scrollToEnd(i + 1), 5000)); scrollToEnd();"""
-    log.info(f"scraping channel page with the URL {url} for post data")
+    log.info(f"Đang thu thập dữ liệu từ {url} để lấy dữ liệu bài viết.")
     response = await SCRAPFLY.async_scrape(
         ScrapeConfig(
             url,
             asp=True,
-            country="AU",
+            country="VN",
             wait_for_selector="//div[@data-e2e='user-post-item-list']",
             render_js=True,
-            auto_scroll=True,
+            auto_scroll=False, #True
             rendering_wait=10000,
-            js=js,
+            # js=js,
             debug=True,
         )
     )
         
     data = parse_channel(response)
-    log.info(f"Đã quét được dữ liệu của {len(data)} bài viết")
+    log.info(f"Đã quét được {len(data)} bài viết từ kênh {url}")
     return data

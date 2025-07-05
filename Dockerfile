@@ -7,7 +7,8 @@ ENV HOME=/home/$USER
 RUN useradd --create-home --shell /bin/bash $USER
 
 # Cài đặt hệ thống cần thiết
-RUN apt-get update && apt-get install -y curl build-essential && apt-get clean
+RUN apt-get update && apt-get install -y curl build-essential tzdata && apt-get clean
+ENV TZ=Asia/Ho_Chi_Minh
 
 # Thiết lập biến môi trường cho Poetry
 ENV POETRY_VERSION=2.1.3

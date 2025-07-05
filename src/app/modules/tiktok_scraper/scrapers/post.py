@@ -61,7 +61,6 @@ async def scrape_posts(urls: List[str]) -> List[Dict]:
                 data.append(post_data)
             except Exception as e:
                 log.error(f"Error parsing post data: {e}")
-                log.error(f"Response content: {getattr(response, 'content', 'No content')}")
                 continue
     except ApiHttpServerError as e:
         log.error(f"Scrapfly fatal error: {str(e)}")

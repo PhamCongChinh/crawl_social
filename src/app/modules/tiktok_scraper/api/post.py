@@ -16,6 +16,7 @@ from app.modules.tiktok_scraper.services.post import PostService
 import logging
 
 # from app.tasks.crawl_tiktok import crawl_tiktok_posts
+from app.tasks.tiktok.dispatcher import dispatch_video_batches
 from app.tasks.tiktok.post import crawl_tiktok_posts
 from app.utils.delay import async_delay
 log = logging.getLogger(__name__)
@@ -26,10 +27,13 @@ router = APIRouter()
 async def get_posts():
     log.info("Đang lấy dữ liệu post")
     try:
-        data = await PostService.get_posts()
-        return data
+        # data = await PostService.get_posts()
+        dispatch_video_batches.delay()
+        log.info("Đã lấy dữ liệu post")
+        return None
     except Exception as e:
-        pass
+        log.error(f"Lỗi khi lấy dữ liệu post: {e}")
+        return {"status": "error", "message": str(e)}
 
 @router.get("/posts/crawl")
 async def crawl_posts():
