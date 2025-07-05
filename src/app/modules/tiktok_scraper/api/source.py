@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import APIRouter, HTTPException
 
 import logging
@@ -30,3 +31,9 @@ async def create_or_update_source(request: SourceModel):
     data = request.model_dump(exclude_unset=True)
     status = await SourceService.upsert_source(data)
     return {"status": status}
+
+@router.post("/sources/batch")
+async def create_or_update_source_batch(request: List[SourceModel]):
+    data = [item.model_dump(exclude_unset=True) for item in request]
+    count = await SourceService.upsert_source_batch(data)
+    return {"message": f"Đã xử lý {count} source"}

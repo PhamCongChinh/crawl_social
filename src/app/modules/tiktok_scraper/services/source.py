@@ -1,6 +1,10 @@
+import asyncio
+from cmath import log
 from bson import ObjectId
+from pymongo import UpdateOne
 from app.modules.tiktok_scraper.models.source import SourceModel
 from app.config import postgres_connection
+from app.utils.timezone import now_vn
 
 
 class SourceService:
@@ -29,3 +33,32 @@ class SourceService:
         else:
             await SourceModel(**data).insert()
             return "inserted"
+        
+    @staticmethod
+    async def upsert_source_batch(sources: list[dict]) -> int:
+        now = now_vn()
+        operations = []
+        for src in sources:
+            source_url = src.get("source_url")
+            if not source_url:
+                log.warning("❌ Thiếu source_url, bỏ qua.")
+                continue
+            src["updated_at"] = now
+            operations.append(
+                UpdateOne(
+                    {"source_url": source_url},  # filter theo source_url
+                    {
+                        "$set": src,
+                        "$setOnInsert": {
+                            "created_at": now,
+                        }
+                    },
+                    upsert=True
+                )
+            )
+        
+        if not operations:
+            return 0
+
+        result = await SourceModel.get_motor_collection().bulk_write(operations)
+        return result.upserted_count + result.modified_count

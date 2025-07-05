@@ -35,7 +35,7 @@ def crawl_tiktok_channels(self, job_id: str, channel_id: str):
                     data = source.model_dump(by_alias=True)
                     data["_id"] = str(data["_id"])
                     coroutines.append(crawl_tiktok_channel_direct(data))
-                await limited_gather(coroutines, limit=1)
+                await limited_gather(coroutines, limit=3)  # Giới hạn 3 request Scrapfly chạy cùng lúc
                 await asyncio.sleep(2)  # nghỉ 2 giây giữa batch
 
             # Trong hàm async
