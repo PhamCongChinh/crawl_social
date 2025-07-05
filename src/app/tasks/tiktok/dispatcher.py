@@ -9,7 +9,7 @@ from beanie.operators import In
 
 from app.tasks.tiktok.worker import crawl_video_batch
 
-BATCH_SIZE = 1
+BATCH_SIZE = 50
 LOCK_EXPIRE = 600
 import logging
 log = logging.getLogger(__name__)
