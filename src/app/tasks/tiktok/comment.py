@@ -37,7 +37,7 @@ def crawl_tiktok_comments(self, job_id: str, channel_id: str):
                 comments_batch: List[dict] = []
                 for post in batch:
                     comments = await crawl_tiktok_comment_direct_1(post)
-                    comments_batch.extend(comments)
+                    comments_batch.append(comments)
                     await async_delay(2, 4) # Giả lập delay để tránh quá tải
                 print(comments_batch)
                 await postToES(comments_batch) # Gửi lên Elasticsearch
