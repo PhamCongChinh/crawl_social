@@ -44,7 +44,7 @@ def crawl_tiktok_comments(self, job_id: str, channel_id: str):
                 await async_delay(3, 5) # Giả lập delay để tránh quá tải
             await asyncio.sleep(1)
             log.info(f"✅ Hoàn thành cào {len(posts)} video, tổng cộng {len(comments_batch)} comments")
-            
+            await postgres_connection.disconnect()
             # # Trong hàm async
             # coroutines = []
             # for idx, channel in enumerate(channels):
@@ -68,7 +68,7 @@ def chunked(iterable: list, size: int):
 # ví dụ
 async def crawl_tiktok_comment_direct_1(post: dict):
     try:
-        await postgres_connection.connect()
+        # await postgres_connection.connect()
         data = await scrape_comments(post["url"])
         print(f"Đã lấy {len(data)} comments từ {post['id']}")
         await async_delay(2,4)

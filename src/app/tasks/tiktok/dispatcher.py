@@ -28,7 +28,9 @@ def dispatch_video_batches():
     async def inner():
         await mongo_connection.connect()
         # videos = await ChannelModel.find(ChannelModel.status == "pending").limit(max_video).to_list()
-        videos = await ChannelModel.find(ChannelModel.status == "pending").to_list()
+        videos = await ChannelModel.find(
+            (ChannelModel.status == "pending") & (ChannelModel.create_time > 1750525200)
+        ).to_list()
         ids = [str(v.id) for v in videos]
         await ChannelModel.find(In(ChannelModel.id, ids)).update_many({"$set": {"status": "processing"}})
         video_dicts = [v.model_dump() for v in videos]
