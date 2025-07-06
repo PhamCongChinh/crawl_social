@@ -5,11 +5,11 @@ import redis
 from app.modules.tiktok_scraper.models.channel import ChannelModel
 from app.config import mongo_connection
 from celery import group
-from beanie.operators import In
+from beanie.operators import In, And
 
 from app.tasks.tiktok.worker import crawl_video_batch
 
-BATCH_SIZE = 50
+BATCH_SIZE = 100
 LOCK_EXPIRE = 600
 import logging
 log = logging.getLogger(__name__)
@@ -28,8 +28,14 @@ def dispatch_video_batches():
     async def inner():
         await mongo_connection.connect()
         # videos = await ChannelModel.find(ChannelModel.status == "pending").limit(max_video).to_list()
+        # videos = await ChannelModel.find(
+        #     (ChannelModel.status == "pending") & (ChannelModel.createTime > 1750525200)
+        # ).to_list()
         videos = await ChannelModel.find(
-            (ChannelModel.status == "pending") & (ChannelModel.create_time > 1750525200)
+            And(
+                ChannelModel.status == "pending",
+                ChannelModel.createTime > 1750525200
+            )
         ).to_list()
         ids = [str(v.id) for v in videos]
         await ChannelModel.find(In(ChannelModel.id, ids)).update_many({"$set": {"status": "processing"}})

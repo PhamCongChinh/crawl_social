@@ -15,7 +15,7 @@ class ChannelModel(Document):
     id: Optional[str] = Field(None, alias="_id")  # map với _id MongoDB
     desc: Optional[str] = None
     contents: Optional[str] = None
-    create_time: Optional[datetime] = None
+    createTime: Optional[int] = None
     stats: Optional[ChannelStats] = None
 
     org_id: Optional[int] = None
@@ -26,12 +26,12 @@ class ChannelModel(Document):
     crawled: Optional[int] = 0  # 0: chưa crawl, 1: đã crawl, 2: đã crawl comments
     status: str = "pending" # pending, crawling, done, error
 
-    @field_validator("create_time", mode="before")
-    @classmethod
-    def convert_timestamp(cls, v):
-        if isinstance(v, int):
-            return datetime.fromtimestamp(v)
-        return v
+    # @field_validator("create_time", mode="before")
+    # @classmethod
+    # def convert_timestamp(cls, v):
+    #     if isinstance(v, int):
+    #         return datetime.fromtimestamp(v)
+    #     return v
 
     class Settings:
         name = "tiktok_channels"
