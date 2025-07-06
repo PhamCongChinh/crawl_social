@@ -20,7 +20,7 @@ class ChannelService:
 
     @staticmethod
     async def get_posts_postgre():
-        query = "SELECT * FROM public.tbl_posts WHERE crawl_source_code = 'tt' AND pub_time >= 1750698000"
+        query = "SELECT * FROM public.tbl_posts WHERE crawl_source_code = 'tt' AND pub_time >= 1748710800"
         results = await postgres_connection.fetch_all(query)
         print(f"Fetched {len(results)} sources from PostgreSQL")
         return [dict(row) for row in results]  # optional: convert Record -> dict

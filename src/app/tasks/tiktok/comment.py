@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime
 import logging
+from typing import List
 
 from bson import Int64
 
@@ -29,21 +30,21 @@ def crawl_tiktok_comments(self, job_id: str, channel_id: str):
             await postgres_connection.connect()
             # channels = await ChannelService.get_channels_crawl_comments()
             posts = await ChannelService.get_posts_postgre()
-            log.info(f"🚀 Đang cào {len(posts)}")
+            log.info(f"🚀 Tổng cộng {len(posts)} video")
 
-            coroutines = []
-            for idx, post in enumerate(posts):
-                log.info(f"🕐 [{idx+1}/{len(posts)}] {post['id']}")
-                # data = channel.model_dump(by_alias=True)
-                # data["_id"] = str(data["_id"])
-                print(f"post: {post}")
-                print(type(post))
-                coroutines.append(crawl_tiktok_comment_direct_1(post))
-
-                break
-            # Giới hạn 3 request Scrapfly chạy cùng lúc
-            await limited_gather(coroutines, limit=1)
-
+            for idx, batch in enumerate(chunked(posts, 10)): # batch là video
+                log.info(f"⚙️ Batch {idx+1} – Cào {len(batch)} video")
+                comments_batch: List[dict] = []
+                for post in batch:
+                    comments = await crawl_tiktok_comment_direct_1(post)
+                    comments_batch.extend(comments)
+                    await async_delay(2, 4) # Giả lập delay để tránh quá tải
+                print(comments_batch)
+                await postToES(comments_batch) # Gửi lên Elasticsearch
+                await async_delay(3, 5) # Giả lập delay để tránh quá tải
+            await asyncio.sleep(1)
+            log.info(f"✅ Hoàn thành cào {len(posts)} video, tổng cộng {len(comments_batch)} comments")
+            
             # # Trong hàm async
             # coroutines = []
             # for idx, channel in enumerate(channels):
@@ -59,6 +60,11 @@ def crawl_tiktok_comments(self, job_id: str, channel_id: str):
             log.error(e)
     return asyncio.run(do_crawl())
 
+
+# Hàm chia list thành batch nhỏ
+def chunked(iterable: list, size: int):
+    for i in range(0, len(iterable), size):
+        yield iterable[i:i + size]
 # ví dụ
 async def crawl_tiktok_comment_direct_1(post: dict):
     try:
@@ -68,13 +74,14 @@ async def crawl_tiktok_comment_direct_1(post: dict):
         await async_delay(2,4)
         comment = flatten_post_list_1(data, post=post)
 
-        result = await postToES(comment)
-        if not result:
-            log.warning(f"⚠️ Không thể gửi dữ liệu comment lên Elasticsearch cho post {post['id']}")
-            return
+        # result = await postToES(comment)
+        # if not result:
+        #     log.warning(f"⚠️ Không thể gửi dữ liệu comment lên Elasticsearch cho post {post['id']}")
+        #     return
 
-        log.info(f"🔍 Crawling source: {post['id']}")
-        return result
+        # log.info(f"🔍 Crawling source: {post['id']}")
+        # return result
+        return comment # list comment đã flatten
     except Exception as e:
         log.error(e)
 

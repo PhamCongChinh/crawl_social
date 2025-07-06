@@ -22,7 +22,7 @@ router = APIRouter()
 async def get_comments():
     try:
         log.info("Đang lấy dữ liệu Channels")
-        channels = await ChannelService.get_channels_crawl_comments()
+        channels = await ChannelService.get_posts_postgre()
         if not channels:
             raise HTTPException(status_code=204, detail="Không có dữ liệu")
         log.info(f"Đã tìm thấy {len(channels)} bài viết trong cơ sở dữ liệu")
