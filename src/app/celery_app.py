@@ -1,5 +1,6 @@
 from celery import Celery
 from app.config.settings import settings
+from celery.schedules import crontab
 
 celery_app = Celery(
     "worker",
@@ -18,3 +19,15 @@ celery_app.conf.update(
 celery_app.autodiscover_tasks([
     "app.tasks.tiktok"
 ])
+
+
+# Định nghĩa lịch trình cho các tác vụ định kỳ
+# Ví dụ: crawl TikTok channels mỗi giờ
+beat_schedule = {
+    'crawl-every-hour': {
+        'task': 'app.tasks.tiktok.channel.crawl_tiktok_channels_hourly',
+        'schedule': crontab(minute="*"),  # mỗi đầu giờ
+        'options': {'queue': 'hourly_queue'},
+    }
+}
+celery_app.conf.beat_schedule = beat_schedule

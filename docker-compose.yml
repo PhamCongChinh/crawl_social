@@ -34,6 +34,23 @@ services:
       - fastapi_app
     command: >
       poetry run celery -A app.worker worker --concurrency=1 --loglevel=info
+
+  # Worker xử lý task hằng giờ (ví dụ: từ Celery Beat hoặc APScheduler)
+  celery_schedule_worker:
+    build:
+      context: .
+    container_name: celery_schedule_worker
+    volumes:
+      - ./src:/app/src
+      - ./pyproject.toml:/app/pyproject.toml
+      - ./poetry.lock:/app/poetry.lock
+    env_file:
+      - .env
+    depends_on:
+      - redis_server
+      - fastapi_app
+    command: >
+      poetry run celery -A app.worker worker --concurrency=1 --loglevel=info -Q hourly_queue -n worker_hourly
   
   # Lập lịch
   celery_beat:

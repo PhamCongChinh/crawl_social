@@ -12,6 +12,19 @@ from app.modules.tiktok_scraper.models.source import SourceModel
 from app.modules.tiktok_scraper.services.channel import ChannelService
 from app.config import mongo_connection
 
+
+
+@celery_app.task(
+    queue="hourly_queue",
+    name="app.tasks.tiktok.channel.crawl_tiktok_channels_hourly"
+)
+def crawl_tiktok_channels_hourly():
+    log.info("Task định kỳ - Bắt đầu crawl TikTok channels")
+    print("🕐 Crawling hourly...")
+    # Gọi hàm crawl_tiktok_channels với các tham số mặc định
+    # asyncio.run(crawl_tiktok_channels("hourly_job", "hourly_channel"))
+
+
 @celery_app.task(
     name="app.tasks.tiktok.channel.crawl_tiktok_channels",
     bind=True,
