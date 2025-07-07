@@ -29,15 +29,15 @@ def crawl_tiktok_comments(self, job_id: str, channel_id: str):
         try:
             await postgres_connection.connect()
             # channels = await ChannelService.get_channels_crawl_comments()
-            posts = await ChannelService.get_posts_postgre()
+            posts = await ChannelService.get_posts_postgre(1751475600, 1751734800) # Lấy video từ PostgreSQL
             log.info(f"🚀 Tổng cộng {len(posts)} video")
 
-            for idx, batch in enumerate(chunked(posts, 10)): # batch là video
+            for idx, batch in enumerate(chunked(posts, 5)): # batch là video
                 log.info(f"⚙️ Batch {idx+1} – Cào {len(batch)} video")
                 comments_batch: List[dict] = []
                 for post in batch:
                     comments = await crawl_tiktok_comment_direct_1(post)
-                    comments_batch.append(comments)
+                    comments_batch.extend(comments)
                     await async_delay(2, 4) # Giả lập delay để tránh quá tải
                 print(comments_batch)
                 await postToES(comments_batch) # Gửi lên Elasticsearch

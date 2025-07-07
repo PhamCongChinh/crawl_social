@@ -19,8 +19,8 @@ from app.config import mongo_connection, postgres_connection
 class ChannelService:
 
     @staticmethod
-    async def get_posts_postgre():
-        query = "SELECT * FROM public.tbl_posts WHERE crawl_source_code = 'tt' AND pub_time >= 1748710800"
+    async def get_posts_postgre(start_time: int = 1751734800, end_time: int = 1751821200) -> List[dict]:
+        query = f"SELECT * FROM public.tbl_posts WHERE crawl_source_code = 'tt' AND org_id IN (2, 6) AND pub_time >= {start_time} AND pub_time <= {end_time}"
         results = await postgres_connection.fetch_all(query)
         print(f"Fetched {len(results)} sources from PostgreSQL")
         return [dict(row) for row in results]  # optional: convert Record -> dict

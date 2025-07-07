@@ -9,7 +9,7 @@ from beanie.operators import In, And
 
 from app.tasks.tiktok.worker import crawl_video_batch
 
-BATCH_SIZE = 100
+BATCH_SIZE = 50
 LOCK_EXPIRE = 600
 import logging
 log = logging.getLogger(__name__)
@@ -34,7 +34,9 @@ def dispatch_video_batches():
         videos = await ChannelModel.find(
             And(
                 ChannelModel.status == "pending",
-                ChannelModel.createTime > 1750525200
+                ChannelModel.createTime > 1751778000,
+                ChannelModel.createTime < 1751821200
+                # ChannelModel.org_id != 0  # Chỉ lấy các video đã phân loại
             )
         ).to_list()
         ids = [str(v.id) for v in videos]

@@ -14,7 +14,8 @@ from app.config import mongo_connection
 
 @celery_app.task(
     name="app.tasks.tiktok.channel.crawl_tiktok_channels",
-    bind=True
+    bind=True,
+    queue="tiktok_channel_queue"
 )
 def crawl_tiktok_channels(self, job_id: str, channel_id: str):
     log.info(f"Task {job_id} - {channel_id} bắt đầu")
