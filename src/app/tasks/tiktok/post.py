@@ -31,8 +31,7 @@ def crawl_tiktok_posts_hourly():
     async def do_crawl():
         try:
             await mongo_connection.connect()
-            videos1 = await ChannelService.get_channels_posts_hourly()
-            videos = videos1[:1]
+            videos = await ChannelService.get_channels_posts_hourly()
             ids = [str(v.id) for v in videos]
             video_dicts = [v.model_dump() for v in videos]
             await ChannelModel.find(In(ChannelModel.id, ids)).update_many({"$set": {"status": "processing"}})

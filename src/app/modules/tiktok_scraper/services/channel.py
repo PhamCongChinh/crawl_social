@@ -82,7 +82,7 @@ class ChannelService:
         vietnam_tz = timezone(timedelta(hours=7))
         now_vietnam = datetime.now(vietnam_tz)
         timestamp = int(now_vietnam.timestamp())
-        two_hours_ago = timestamp - 30 * 60 * 60
+        two_hours_ago = timestamp - 2 * 60 * 60
 
         return await ChannelModel.find(
             And(
