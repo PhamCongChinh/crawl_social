@@ -35,7 +35,7 @@ def crawl_tiktok_posts_hourly():
             ids = [str(v.id) for v in videos]
             video_dicts = [v.model_dump() for v in videos]
             await ChannelModel.find(In(ChannelModel.id, ids)).update_many({"$set": {"status": "processing"}})
-            log.info(f"🚀 Đang cào {len(video_dicts)}")
+            log.info(f"🚀 Đang cào {len(video_dicts)} video")
             data_list_classified = []
             data_list_unclassified = []
             for index, video in enumerate(video_dicts):

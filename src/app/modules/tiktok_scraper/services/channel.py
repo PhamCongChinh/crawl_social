@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import List
+from zoneinfo import ZoneInfo
 from pymongo import UpdateOne
 from app.modules.tiktok_scraper.models.channel import ChannelModel
 from app.modules.tiktok_scraper.models.source import SourceModel
@@ -79,15 +80,17 @@ class ChannelService:
     
     @staticmethod
     async def get_channels_posts_hourly():
-        vietnam_tz = timezone(timedelta(hours=7))
-        now_vietnam = datetime.now(vietnam_tz)
-        timestamp = int(now_vietnam.timestamp())
-        two_hours_ago = timestamp - 3 * 60 * 60
+        vn_now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
+        vn_today = vn_now.replace(hour=0, minute=0, second=0, microsecond=0)
+        timestamp = int(vn_today.timestamp())
+        log.info(vn_now)
+        log.info(vn_today)
+        log.info(timestamp)
 
         return await ChannelModel.find(
             And(
                 ChannelModel.status == "pending",
-                ChannelModel.createTime >= two_hours_ago
+                ChannelModel.createTime >= timestamp
             )
         ).to_list()
     

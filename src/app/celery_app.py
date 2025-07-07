@@ -26,17 +26,17 @@ celery_app.autodiscover_tasks([
 beat_schedule = {
     'crawl-every-hour': {
         'task': 'app.tasks.tiktok.channel.crawl_tiktok_channels_hourly',
-        'schedule': crontab(minute="0"),  # mỗi đầu giờ
+        'schedule': crontab(minute=0, hour='8,10,12,14,16'),  # mỗi đầu giờ
         'options': {'queue': 'hourly_queue'},
     },
     'crawl-post-every-hour': {
         'task': 'app.tasks.tiktok.channel.crawl_tiktok_posts_hourly',
-        'schedule': crontab(minute="0"),  # mỗi đầu giờ
+        'schedule': crontab(minute=30, hour='8,10,12,14,16'),  # mỗi đầu giờ
         'options': {'queue': 'hourly_queue'},
     },
     'crawl-comment-every-hour': {
         'task': 'app.tasks.tiktok.channel.crawl_tiktok_comments_hourly',
-        'schedule': crontab(minute="0"),  # mỗi đầu giờ
+        'schedule': crontab(minute=45, hour='8,10,12,14,16'),  # mỗi đầu giờ
         'options': {'queue': 'hourly_queue'},
     }
 }

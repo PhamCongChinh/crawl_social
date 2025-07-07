@@ -14,12 +14,12 @@ from app.modules.tiktok_scraper.services.channel import ChannelService
 from app.modules.tiktok_scraper.services.post import PostService
 
 import logging
-
+log = logging.getLogger(__name__)
 # from app.tasks.crawl_tiktok import crawl_tiktok_posts
 from app.tasks.tiktok.dispatcher import dispatch_video_batches
 from app.tasks.tiktok.post import crawl_tiktok_posts
 from app.utils.delay import async_delay
-log = logging.getLogger(__name__)
+
 
 router = APIRouter()
 

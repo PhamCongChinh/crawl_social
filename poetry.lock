@@ -1249,6 +1249,20 @@ test = ["aiohttp (>=3.8.7)", "cffi (>=1.17.0rc1) ; python_version == \"3.13\"", 
 zstd = ["pymongo[zstd] (>=4.5,<5)"]
 
 [[package]]
+name = "nested-lookup"
+version = "0.2.25"
+description = "Python functions for working with deeply nested documents (lists and dicts)"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "nested-lookup-0.2.25.tar.gz", hash = "sha256:6fa832748c90381f2291d850809e32492519ee5f253d6a5acbc29d937eca02e8"},
+]
+
+[package.dependencies]
+six = "*"
+
+[[package]]
 name = "packaging"
 version = "25.0"
 description = "Core utilities for Python packages"
@@ -2335,4 +2349,4 @@ dev = ["black (>=19.3b0) ; python_version >= \"3.6\"", "pytest (>=4.6.2)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9,<3.13"
-content-hash = "04f5174c4a2b82150bb508493973ce86b4deb6779ac28c84bad6038f72d610c2"
+content-hash = "dcd2dc30ac997aa79b9d76068a24d49f786184ffc8fc72dccbbc23bf803a834f"
