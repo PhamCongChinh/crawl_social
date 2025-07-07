@@ -67,7 +67,7 @@ def crawl_tiktok_comments(self, job_id: str, channel_id: str):
         try:
             await postgres_connection.connect()
             # channels = await ChannelService.get_channels_crawl_comments()
-            posts = await ChannelService.get_posts_postgre(1751302800, 1751734800) # Lấy video từ PostgreSQL
+            posts = await ChannelService.get_posts_postgre(1751216400, 1751302800) # Lấy video từ PostgreSQL
             log.info(f"🚀 Tổng cộng {len(posts)} video")
 
             for idx, batch in enumerate(chunked(posts, 5)): # batch là video

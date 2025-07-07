@@ -72,7 +72,7 @@ class ChannelService:
         """
         Lấy danh sách các channel đã crawl trong vòng 1 giờ qua
         """
-        query = f"SELECT * FROM public.tbl_posts WHERE crawl_source_code = 'tt' AND org_id IN (2, 6) AND pub_time >= EXTRACT(EPOCH FROM (NOW() - INTERVAL '2 hours')) AND pub_time <= EXTRACT(EPOCH FROM NOW());"
+        query = f"SELECT * FROM public.tbl_posts WHERE crawl_source_code = 'tt' AND pub_time >= EXTRACT(EPOCH FROM (NOW() - INTERVAL '3 hours')) AND pub_time <= EXTRACT(EPOCH FROM NOW());"
         results = await postgres_connection.fetch_all(query)
         log.info(f"Đã lấy được {len(results)} bài viết từ PostgreSQL 2 giờ qua")
         return [dict(row) for row in results]  # optional: convert Record -> dict
@@ -82,7 +82,7 @@ class ChannelService:
         vietnam_tz = timezone(timedelta(hours=7))
         now_vietnam = datetime.now(vietnam_tz)
         timestamp = int(now_vietnam.timestamp())
-        two_hours_ago = timestamp - 2 * 60 * 60
+        two_hours_ago = timestamp - 3 * 60 * 60
 
         return await ChannelModel.find(
             And(
