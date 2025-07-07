@@ -54,7 +54,6 @@ async def _crawl_batch_async(videos: list[dict], batch_index: int, total_batches
 
 async def crawl_tiktok_post_list_direct_classified(channels: list[dict]):
     try:
-        await mongo_connection.connect()
         log.info(f"📦 Tổng số channel: {len(channels)}")
         urls = [item["id"] for item in channels]
         posts_data = []
@@ -71,7 +70,7 @@ async def crawl_tiktok_post_list_direct_classified(channels: list[dict]):
                 {"$set": {"status": "done"}}
             )
 
-        await async_delay(2, 4)  # Đảm bảo browser session trước shutdown
+        await async_delay(10, 12)  # Đảm bảo browser session trước shutdown
         return posts_data
 
     except Exception as e:
@@ -79,7 +78,6 @@ async def crawl_tiktok_post_list_direct_classified(channels: list[dict]):
 
 async def crawl_tiktok_post_list_direct_unclassified(channels: list[dict]):
     try:
-        await mongo_connection.connect()
         log.info(f"📦 Tổng số channel: {len(channels)}")
         urls = [item["id"] for item in channels]
         posts_data = []
@@ -96,7 +94,7 @@ async def crawl_tiktok_post_list_direct_unclassified(channels: list[dict]):
                 {"$set": {"status": "done"}}
             )
 
-        await async_delay(2, 4)  # Đảm bảo browser session trước shutdown
+        await async_delay(10, 12)  # Đảm bảo browser session trước shutdown
         return posts_data
 
     except Exception as e:

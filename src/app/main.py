@@ -13,7 +13,8 @@ from app.core.lifespan import lifespan
 from app.modules.scheduler.api import router as scheduler_router
 from app.modules.tiktok_scraper.api import router as tiktok_router
 from app.modules.thread_scraper.api import router as thread_router
-from app.modules.web_scraper.api.routes import router as web_router
+from app.modules.instagram_scraper.api import router as instagram_router
+from app.modules.google_scraper.api import router as google_router
 
 
 app = FastAPI(title="Social Media Crawler API", version="1.0.0", lifespan=lifespan)
@@ -22,8 +23,9 @@ app.add_middleware(LoggingAPI)
 
 app.include_router(scheduler_router, prefix="/api/v1/jobs", tags=["jobs"])
 app.include_router(tiktok_router, prefix="/api/v1/tiktok", tags=["tiktok"])
-app.include_router(thread_router, prefix="/api/v1/thread", tags=["thread"])  
-app.include_router(web_router, prefix="/api/v1/web", tags=["web"])  
+app.include_router(thread_router, prefix="/api/v1/thread", tags=["thread"])
+app.include_router(instagram_router, prefix="/api/v1/instagram", tags=["instagram"])  
+app.include_router(google_router, prefix="/api/v1/google", tags=["google"])  
 
 def main():
     uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)
