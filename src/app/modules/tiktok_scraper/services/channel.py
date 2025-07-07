@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from typing import List
 from pymongo import UpdateOne
 from app.modules.tiktok_scraper.models.channel import ChannelModel
@@ -11,10 +12,13 @@ from app.utils.delay import async_delay
 from app.utils.timezone import now_vn
 
 from pymongo.errors import BulkWriteError
+from beanie.operators import In, And
 
 log = logging.getLogger(__name__)
 
 from app.config import mongo_connection, postgres_connection
+now = datetime.now(timezone(timedelta(hours=7)))
+two_hours_ago = now - timedelta(hours=24)
 
 class ChannelService:
 
@@ -58,14 +62,35 @@ class ChannelService:
     # Bắt đầu
     @staticmethod
     async def get_videos_to_crawl(limit=10):
-        # await mongo_connection.connect()
-        # videos = await mongo_connection.db["tiktok_channels"].find({
-        #     "crawled": 0,  # Chưa được crawl
-        # }).limit(limit).to_list(length=limit)
-        # return videos
         return await ChannelModel.find(ChannelModel.crawled == 0).limit(limit).to_list()
 
 
+
+
+    @staticmethod
+    async def get_channels_comments_hourly():
+        """
+        Lấy danh sách các channel đã crawl trong vòng 1 giờ qua
+        """
+        query = f"SELECT * FROM public.tbl_posts WHERE crawl_source_code = 'tt' AND org_id IN (2, 6) AND pub_time >= EXTRACT(EPOCH FROM (NOW() - INTERVAL '2 hours')) AND pub_time <= EXTRACT(EPOCH FROM NOW());"
+        results = await postgres_connection.fetch_all(query)
+        log.info(f"Đã lấy được {len(results)} bài viết từ PostgreSQL 2 giờ qua")
+        return [dict(row) for row in results]  # optional: convert Record -> dict
+    
+    @staticmethod
+    async def get_channels_posts_hourly():
+        vietnam_tz = timezone(timedelta(hours=7))
+        now_vietnam = datetime.now(vietnam_tz)
+        timestamp = int(now_vietnam.timestamp())
+        two_hours_ago = timestamp - 30 * 60 * 60
+
+        return await ChannelModel.find(
+            And(
+                ChannelModel.status == "pending",
+                ChannelModel.createTime >= two_hours_ago
+            )
+        ).to_list()
+    
     @staticmethod
     async def upsert_channels_bulk(channels: list[dict], source: SourceModel):
         try:

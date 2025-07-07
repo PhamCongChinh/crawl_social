@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.utils.timezone import now_vn
+
 class ChannelStats(BaseModel):
     collect_count: Optional[int] = Field(None, alias="collectCount")
     comment_count: Optional[int] = Field(None, alias="commentCount")
@@ -25,6 +27,7 @@ class ChannelModel(Document):
     source_channel: Optional[str] = None
     crawled: Optional[int] = 0  # 0: chưa crawl, 1: đã crawl, 2: đã crawl comments
     status: str = "pending" # pending, crawling, done, error
+    updated_at: Optional[datetime] = None
 
     # @field_validator("create_time", mode="before")
     # @classmethod

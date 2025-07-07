@@ -19,8 +19,11 @@ router = APIRouter()
 async def get_channels():
     try:
         log.info("Đang lấy dữ liệu Channels")
-        channels = await ChannelService.get_channels_crawl()
+        # channels = await ChannelService.get_channels_crawl()
         # channels = await ChannelService.get_videos_to_crawl()
+        # channels = await ChannelService.get_channels_crawl()
+        channels = await ChannelService.get_channels_posts_hourly()
+        log.info(f"Đã lấy được {len(channels)} kênh")
         if not channels:
             raise HTTPException(status_code=204, detail="Không có dữ liệu")
         log.info(f"Đã lấy được {len(channels)} kênh")

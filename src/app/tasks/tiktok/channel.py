@@ -21,9 +21,30 @@ from app.config import mongo_connection
 def crawl_tiktok_channels_hourly():
     log.info("Task định kỳ - Bắt đầu crawl TikTok channels")
     print("🕐 Crawling hourly...")
-    # Gọi hàm crawl_tiktok_channels với các tham số mặc định
-    # asyncio.run(crawl_tiktok_channels("hourly_job", "hourly_channel"))
-
+    async def do_crawl():
+        try:
+            await mongo_connection.connect()
+            sources = await SourceService.get_sources_hourly()
+            log.info(f"📦 Tổng số source: {len(sources)}")
+            batch_size = 5  # Số lượng source mỗi lần crawl
+            batches = _chunk_sources(sources, batch_size)
+            log.info(f"📦 Chia thành {len(batches)} batch, mỗi batch {batch_size} nguồn")
+            for batch_index, batch in enumerate(batches, start=1):
+                log.info(f"🚀 Đang xử lý batch {batch_index}/{len(batches)} với {len(batch)} nguồn")
+                coroutines = []
+                for idx, source in enumerate(batch):
+                    overall_idx = (batch_index - 1) * batch_size + idx + 1
+                    log.info(f"🕐 [{overall_idx}/{len(sources)}] {source.source_url}")
+                    data = source.model_dump(by_alias=True)
+                    data["_id"] = str(data["_id"])
+                    coroutines.append(crawl_tiktok_channel_direct(data))
+                await limited_gather(coroutines, limit=1)  # Giới hạn 3 request Scrapfly chạy cùng lúc
+                await asyncio.sleep(2)  # nghỉ 2 giây giữa batch
+            # log.info(f"✅ Task cha {job_id} hoàn tất toàn bộ")
+        except Exception as e:
+            log.error(e)
+    return asyncio.run(do_crawl())
+    # asyncio.create_task(do_crawl())
 
 @celery_app.task(
     name="app.tasks.tiktok.channel.crawl_tiktok_channels",
@@ -49,7 +70,7 @@ def crawl_tiktok_channels(self, job_id: str, channel_id: str):
                     data = source.model_dump(by_alias=True)
                     data["_id"] = str(data["_id"])
                     coroutines.append(crawl_tiktok_channel_direct(data))
-                await limited_gather(coroutines, limit=3)  # Giới hạn 3 request Scrapfly chạy cùng lúc
+                await limited_gather(coroutines, limit=1)  # Giới hạn 3 request Scrapfly chạy cùng lúc
                 await asyncio.sleep(2)  # nghỉ 2 giây giữa batch
 
             # Trong hàm async

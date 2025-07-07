@@ -35,6 +35,16 @@ class SourceService:
             await SourceModel(**data).insert()
             return "inserted"
         
+
+    @staticmethod
+    async def get_sources_hourly():
+        """
+        Lấy danh sách các nguồn đã cập nhật trong vòng 1 giờ qua
+        """
+        # one_hour_ago = now_vn() - timedelta(hours=1)
+        # return await SourceModel.find(SourceModel.updated_at >= one_hour_ago).to_list()
+        return await SourceModel.find(SourceModel.org_id != 0).to_list()
+
     @staticmethod
     async def upsert_source_batch(sources: list[dict]) -> int:
         now = now_vn()

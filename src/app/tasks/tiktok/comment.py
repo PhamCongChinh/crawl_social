@@ -19,6 +19,44 @@ from app.worker import celery_app
 
 from app.config import mongo_connection, postgres_connection
 
+
+@celery_app.task(
+    queue="hourly_queue",
+    name="app.tasks.tiktok.channel.crawl_tiktok_comments_hourly"
+)
+def crawl_tiktok_comments_hourly():
+    async def do_crawl():
+        try:
+            await postgres_connection.connect()
+            # channels = await ChannelService.get_channels_crawl_comments()
+            # posts = await ChannelService.get_posts_postgre(1751302800, 1751734800) # Lấy video từ PostgreSQL
+            posts = await ChannelService.get_channels_comments_hourly() # Lấy video từ PostgreSQL
+            log.info(f"🚀 Tổng cộng {len(posts)} video")
+            if len(posts) == 0:
+                log.info("Không có video nào để cào")
+                await postgres_connection.close()
+                return
+
+            for idx, batch in enumerate(chunked(posts, 5)): # batch là video
+                log.info(f"⚙️ Batch {idx+1} – Cào {len(batch)} video")
+                comments_batch: List[dict] = []
+                for post in batch:
+                    comments = await crawl_tiktok_comment_direct_1(post)
+                    comments_batch.extend(comments)
+                    await async_delay(10, 15) # Giả lập delay để tránh quá tải
+                print(comments_batch)
+                await postToES(comments_batch) # Gửi lên Elasticsearch
+                await async_delay(10, 15) # Giả lập delay để tránh quá tải
+            await asyncio.sleep(1)
+            log.info(f"✅ Hoàn thành cào {len(posts)} video, tổng cộng {len(comments_batch)} comments")
+            await postgres_connection.close()
+            return {"status": "success", "message": f"Đã cào {len(posts)} video và {len(comments_batch)} comments"}
+        except Exception as e:
+            log.error(e)
+    return asyncio.run(do_crawl())
+    # asyncio.create_task(do_crawl())
+
+
 @celery_app.task(
     name="app.tasks.tiktok.post.crawl_tiktok_comments",
     bind=True
