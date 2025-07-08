@@ -50,6 +50,7 @@ async def _crawl_batch_async(videos: list[dict], batch_index: int, total_batches
             log.info(f"Đã thêm {len(post_data_unclassified)} video chưa phân loại vào ElasticSearch")
     print(f"📦 Tổng số video đã lấy: {len(data_list_classified) + len(data_list_unclassified)}")
     print(f"✅ Hoàn tất batch {batch_index}/{total_batches}")
+    await mongo_connection.disconnect()
 
 
 async def crawl_tiktok_post_list_direct_classified(channels: list[dict]):

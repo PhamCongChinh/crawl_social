@@ -34,7 +34,7 @@ def dispatch_video_batches():
         videos = await ChannelModel.find(
             And(
                 ChannelModel.status == "pending",
-                ChannelModel.createTime > 1750401377,
+                ChannelModel.createTime > 1751302800,
                 ChannelModel.createTime < 1751821200
                 # ChannelModel.org_id != 0  # Chỉ lấy các video đã phân loại
             )
@@ -45,7 +45,7 @@ def dispatch_video_batches():
         batches = [video_dicts[i:i + BATCH_SIZE] for i in range(0, len(video_dicts), BATCH_SIZE)]
         log.info(f"📦 Tổng cộng {len(videos)} video, chia thành {len(batches)} batch (mỗi batch {BATCH_SIZE} video)")
         group([crawl_video_batch.s(batch, i + 1, len(batches)) for i, batch in enumerate(batches)]).apply_async()
-        
+
     try:
         asyncio.run(inner())
     except Exception as e:

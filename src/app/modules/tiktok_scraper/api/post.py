@@ -17,7 +17,7 @@ import logging
 log = logging.getLogger(__name__)
 # from app.tasks.crawl_tiktok import crawl_tiktok_posts
 from app.tasks.tiktok.dispatcher import dispatch_video_batches
-from app.tasks.tiktok.post import crawl_tiktok_posts
+from app.tasks.tiktok.post import crawl_tiktok_posts, crawl_tiktok_posts_hourly
 from app.utils.delay import async_delay
 
 
@@ -28,6 +28,18 @@ async def get_posts():
     log.info("Đang lấy dữ liệu post")
     try:
         # data = await PostService.get_posts()
+        dispatch_video_batches.delay()
+        # crawl_tiktok_posts_hourly.delay()
+        log.info("Đã lấy dữ liệu post")
+        return None
+    except Exception as e:
+        log.error(f"Lỗi khi lấy dữ liệu post: {e}")
+        return {"status": "error", "message": str(e)}
+
+@router.get("/posts/crawl/backdate")
+async def get_posts():
+    log.info("Đang lấy dữ liệu post")
+    try:
         dispatch_video_batches.delay()
         log.info("Đã lấy dữ liệu post")
         return None
