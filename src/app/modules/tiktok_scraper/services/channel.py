@@ -68,6 +68,18 @@ class ChannelService:
 
 
 
+
+    @staticmethod
+    async def get_posts_backdate(from_date: int, to_date: int):
+        return await ChannelModel.find(
+            And(
+                ChannelModel.status == "pending",
+                ChannelModel.createTime >= from_date,
+                ChannelModel.createTime <= to_date,
+            )
+        ).to_list()
+
+
     @staticmethod
     async def get_channels_comments_hourly():
         query = f"SELECT * FROM public.tbl_posts WHERE crawl_source_code = 'tt' AND pub_time >= EXTRACT(EPOCH FROM (NOW() - INTERVAL '1 hours')) AND pub_time <= EXTRACT(EPOCH FROM NOW());"
@@ -78,13 +90,16 @@ class ChannelService:
     @staticmethod
     async def get_channels_posts_hourly():
         vn_now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
-        vn_today = vn_now.replace(hour=0, minute=0, second=0, microsecond=0)
-        timestamp = int(vn_today.timestamp())
+        hour_ago = vn_now - timedelta(hours=24)
+
+        from_timestamp = int(hour_ago.timestamp())
+        to_timestamp = int(vn_now.timestamp())
 
         return await ChannelModel.find(
             And(
                 ChannelModel.status == "pending",
-                ChannelModel.createTime >= timestamp,
+                ChannelModel.createTime >= from_timestamp,
+                ChannelModel.createTime < to_timestamp,
             )
         ).to_list()
     

@@ -52,7 +52,7 @@ async def crawl_posts_backdate(request: CrawlPostBackdateRequest):
     try:
         log.info(f"Đang lấy dữ liệu post: {request}")
         # dispatch_video_batches.delay()
-        # log.info("Đã lấy dữ liệu post")
+        crawl_tiktok_posts.delay(request.from_date, request.to_date)
         return {"message": "Crawl started", "request": request}
     except Exception as e:
         log.error(f"Lỗi khi lấy dữ liệu post: {e}")

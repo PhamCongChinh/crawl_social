@@ -4,6 +4,7 @@ from pymongo import ASCENDING, IndexModel
 
 class SourceModel(Document):
     org_id: Optional[int] = None
+    source_crawl: Optional[int] = None #1 FB, 2 Tiktok, 3 Youtube, 4 Website
     source_name: Optional[str] = None
     source_type: Optional[int] = None
     source_url: Optional[str] = None

@@ -37,6 +37,22 @@ services:
 
   # Worker xử lý task hằng giờ (ví dụ: từ Celery Beat hoặc APScheduler)
 
+  # worker_priority_sources:
+  #   build:
+  #     context: .
+  #   container_name: worker_priority_sources
+  #   volumes:
+  #     - ./src:/app/src
+  #     - ./pyproject.toml:/app/pyproject.toml
+  #     - ./poetry.lock:/app/poetry.lock
+  #   env_file:
+  #     - .env
+  #   depends_on:
+  #     - redis_server
+  #     - fastapi_app
+  #   command: >
+  #     poetry run celery -A app.worker worker --concurrency=3 --loglevel=info -Q priority_sources -n priority_sources@%h
+
   worker_tiktok:
     build:
       context: .

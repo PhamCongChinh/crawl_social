@@ -18,13 +18,6 @@ from app.config.settings import Settings
 
 # @shared_task
 def dispatch_video_batches():
-
-    # r = redis.Redis.from_url("redis://redis_server:6379/0")  # sửa URL nếu Redis khác
-
-    # if not r.set("lock:dispatch_video_batches", "1", nx=True, ex=LOCK_EXPIRE):
-    #     log.warning("⛔ Task dispatch đang chạy, bỏ qua lần này.")
-    #     return
-
     async def inner():
         await mongo_connection.connect()
         # videos = await ChannelModel.find(ChannelModel.status == "pending").limit(max_video).to_list()
