@@ -83,14 +83,11 @@ class ChannelService:
         vn_now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
         vn_today = vn_now.replace(hour=0, minute=0, second=0, microsecond=0)
         timestamp = int(vn_today.timestamp())
-        log.info(vn_now)
-        log.info(vn_today)
-        log.info(timestamp)
 
         return await ChannelModel.find(
             And(
                 ChannelModel.status == "pending",
-                ChannelModel.createTime >= timestamp
+                ChannelModel.createTime >= timestamp,
             )
         ).to_list()
     

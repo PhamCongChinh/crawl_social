@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 
 from app.config.settings import Settings
 
-@shared_task
+# @shared_task
 def dispatch_video_batches():
 
     # r = redis.Redis.from_url("redis://redis_server:6379/0")  # sửa URL nếu Redis khác

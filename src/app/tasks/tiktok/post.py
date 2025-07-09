@@ -33,7 +33,7 @@ def crawl_tiktok_posts_hourly(job_name:str, crawl_type: str):
             log.info("Lấy dữ liệu bài viết hằng ngày")
             await mongo_connection.connect()
             videos = await ChannelService.get_channels_posts_hourly()
-            if len(videos) > 0:
+            if len(videos) == 0:
                 log.info("Không có dữ liệu trong ngày")
                 await mongo_connection.disconnect()
                 return

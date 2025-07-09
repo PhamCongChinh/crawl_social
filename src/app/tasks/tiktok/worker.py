@@ -14,7 +14,7 @@ from app.modules.tiktok_scraper.scrapers.post import scrape_posts
 from app.utils.delay import async_delay
 log = logging.getLogger(__name__)
 
-@shared_task
+# @shared_task
 def crawl_video_batch(videos: list[dict], batch_index: int, total_batches: int):
     asyncio.run(_crawl_batch_async(videos, batch_index, total_batches))
 
