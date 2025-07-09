@@ -6,8 +6,6 @@ from zoneinfo import ZoneInfo
 from bson import Int64
 from fastapi import APIRouter
 
-from app.modules.elastic_search.request import dataToES
-from app.modules.elastic_search.service import postToES
 from app.modules.tiktok_scraper.models.channel import ChannelModel
 from app.modules.tiktok_scraper.scrapers.post import scrape_posts
 from app.modules.tiktok_scraper.services.channel import ChannelService
@@ -15,10 +13,12 @@ from app.modules.tiktok_scraper.services.post import PostService
 
 import logging
 log = logging.getLogger(__name__)
-# from app.tasks.crawl_tiktok import crawl_tiktok_posts
 from app.tasks.tiktok.dispatcher import dispatch_video_batches
 from app.tasks.tiktok.post import crawl_tiktok_posts, crawl_tiktok_posts_hourly
 from app.utils.delay import async_delay
+
+
+from app.requests import CrawlPostBackdateRequest
 
 
 router = APIRouter()
@@ -36,16 +36,7 @@ async def get_posts():
         log.error(f"Lỗi khi lấy dữ liệu post: {e}")
         return {"status": "error", "message": str(e)}
 
-@router.get("/posts/crawl/backdate")
-async def get_posts():
-    log.info("Đang lấy dữ liệu post")
-    try:
-        dispatch_video_batches.delay()
-        log.info("Đã lấy dữ liệu post")
-        return None
-    except Exception as e:
-        log.error(f"Lỗi khi lấy dữ liệu post: {e}")
-        return {"status": "error", "message": str(e)}
+
 
 @router.get("/posts/crawl")
 async def crawl_posts():
@@ -55,33 +46,17 @@ async def crawl_posts():
         crawl_tiktok_posts_hourly.delay(job_name, crawl_type)
     except Exception as e:
         return {"status": "error", "message": str(e)}
-    
-    # try:
-    #     log.info("Đang lấy channels từ cơ sở dữ liệu TikTok")
-    #     channels = await ChannelService.get_channels()
-    #     log.info(f"Đã tìm thấy {len(channels)} channels trong cơ sở dữ liệu")
-    #     flatten = []
-    #     for channel in channels:
-    #         try:
-    #             data = await scrape_posts(urls=[channel.id])
-    #             log.info(channel.id)
-    #             if data and len(data) > 0:
-    #                 post = flatten_post_data(data[0], channel=channel)
-    #                 flatten.append(post)
-    #                 await postToES([post])
-    #                 await ChannelService.channel_crawled(channel.id)
-    #                 print(f"✅ Thêm vào flatten: {post['id']}")
-    #             else:
-    #                 print(f"❌ Không có data từ channel {channel.id}")
-    #         except Exception as e:
-    #             log.error(f"Lỗi khi xử lý channel {channel.id}: {e}")
-    #             log.error(traceback.format_exc())  # log full stack trace
-    #             continue
-    #     await PostService.upsert_posts_bulk(flatten)
-    #     # result = await postToES(flatten)
-    #     return flatten
-    # except Exception as e:
-    #     log.error(e)
+
+@router.post("/posts/crawl/backdate")
+async def crawl_posts_backdate(request: CrawlPostBackdateRequest):
+    try:
+        log.info(f"Đang lấy dữ liệu post: {request}")
+        # dispatch_video_batches.delay()
+        # log.info("Đã lấy dữ liệu post")
+        return {"message": "Crawl started", "request": request}
+    except Exception as e:
+        log.error(f"Lỗi khi lấy dữ liệu post: {e}")
+        return {"status": "error", "message": str(e)}
 
 
 VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")

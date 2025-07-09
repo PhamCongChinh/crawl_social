@@ -21,10 +21,10 @@ from app.config import mongo_connection, postgres_connection
 
 
 @celery_app.task(
-    queue="hourly_queue",
+    queue="tiktok_platform",
     name="app.tasks.tiktok.channel.crawl_tiktok_comments_hourly"
 )
-def crawl_tiktok_comments_hourly():
+def crawl_tiktok_comments_hourly(job_name: str, crawl_type: str):
     async def do_crawl():
         try:
             await postgres_connection.connect()

@@ -30,7 +30,7 @@ celery_app.conf.task_queue = (
 
 # Định nghĩa lịch trình cho các tác vụ định kỳ
 # Ví dụ: crawl TikTok channels mỗi giờ
-beat_schedule = {
+# beat_schedule = {
     # 'crawl-every-hour': {
     #     'task': 'app.tasks.tiktok.channel.crawl_tiktok_channels_hourly',
     #     'schedule': crontab(minute=0, hour='6,8,10,12,14,16'),  # mỗi đầu giờ
@@ -46,5 +46,5 @@ beat_schedule = {
     #     'schedule': crontab(minute=45, hour='6,8,10,12,14,16'),  # mỗi đầu giờ
     #     'options': {'queue': 'hourly_queue'},
     # }
-}
-celery_app.conf.beat_schedule = beat_schedule
+# }
+# celery_app.conf.beat_schedule = beat_schedule

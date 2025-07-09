@@ -69,22 +69,22 @@ services:
     command: >
       poetry run celery -A app.worker worker --concurrency=1 --loglevel=info -Q thread_platform -n thread@%h
   
-  # Lập lịch
-  celery_beat:
-    build:
-      context: .
-    container_name: celery_beat
-    volumes:
-      - ./src:/app/src
-      - ./pyproject.toml:/app/pyproject.toml
-      - ./poetry.lock:/app/poetry.lock
-    env_file:
-      - .env
-    depends_on:
-      - redis_server
-      - celery_worker
-    command: >
-      poetry run celery -A app.worker beat --loglevel=info
+  # # Lập lịch
+  # celery_beat:
+  #   build:
+  #     context: .
+  #   container_name: celery_beat
+  #   volumes:
+  #     - ./src:/app/src
+  #     - ./pyproject.toml:/app/pyproject.toml
+  #     - ./poetry.lock:/app/poetry.lock
+  #   env_file:
+  #     - .env
+  #   depends_on:
+  #     - redis_server
+  #     - celery_worker
+  #   command: >
+  #     poetry run celery -A app.worker beat --loglevel=info
 
     
 

@@ -70,7 +70,7 @@ class ChannelService:
 
     @staticmethod
     async def get_channels_comments_hourly():
-        query = f"SELECT * FROM public.tbl_posts WHERE crawl_source_code = 'tt' AND pub_time >= EXTRACT(EPOCH FROM (NOW() - INTERVAL '2 hours')) AND pub_time <= EXTRACT(EPOCH FROM NOW());"
+        query = f"SELECT * FROM public.tbl_posts WHERE crawl_source_code = 'tt' AND pub_time >= EXTRACT(EPOCH FROM (NOW() - INTERVAL '20 hours')) AND pub_time <= EXTRACT(EPOCH FROM NOW());"
         results = await postgres_connection.fetch_all(query)
         log.info(f"Đã lấy được {len(results)} bài viết từ PostgreSQL 2 giờ qua")
         return [dict(row) for row in results]  # optional: convert Record -> dict
