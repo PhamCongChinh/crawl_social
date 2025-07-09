@@ -67,20 +67,21 @@ def crawl_tiktok_comments(self, job_id: str, channel_id: str):
         try:
             await postgres_connection.connect()
             # channels = await ChannelService.get_channels_crawl_comments()
-            posts = await ChannelService.get_posts_postgre(1751216400, 1751302800) # Lấy video từ PostgreSQL
+            posts = await ChannelService.get_posts_postgre(1749834000, 1749920400) # Lấy video từ PostgreSQL
             log.info(f"🚀 Tổng cộng {len(posts)} video")
 
-            for idx, batch in enumerate(chunked(posts, 5)): # batch là video
+            for idx, batch in enumerate(chunked(posts, 1)): # batch là video
                 log.info(f"⚙️ Batch {idx+1} – Cào {len(batch)} video")
                 comments_batch: List[dict] = []
                 for post in batch:
                     comments = await crawl_tiktok_comment_direct_1(post)
                     comments_batch.extend(comments)
-                    await async_delay(10, 15) # Giả lập delay để tránh quá tải
+                    await async_delay(1, 2) # Giả lập delay để tránh quá tải
                 print(comments_batch)
-                await postToES(comments_batch) # Gửi lên Elasticsearch
-                await async_delay(10, 15) # Giả lập delay để tránh quá tải
-            await asyncio.sleep(1)
+                if len(comments_batch) > 0:
+                    await postToES(comments_batch) # Gửi lên Elasticsearch
+                    await async_delay(120,140) # Giả lập delay để tránh quá tải
+                
             log.info(f"✅ Hoàn thành cào {len(posts)} video, tổng cộng {len(comments_batch)} comments")
             await postgres_connection.close()
             # # Trong hàm async
@@ -110,7 +111,7 @@ async def crawl_tiktok_comment_direct_1(post: dict):
         data = await scrape_comments(post["url"], comments_count=20, max_comments=50)
         print(f"Đã lấy {len(data)} comments từ {post['id']}")
         await async_delay(2,4)
-        comment = flatten_post_list_1(data[:50], post=post)
+        comment = flatten_post_list_1(data[:25], post=post)
 
         # result = await postToES(comment)
         # if not result:

@@ -1,6 +1,7 @@
 from celery import Celery
 from app.config.settings import settings
 from celery.schedules import crontab
+from kombu import Queue
 
 celery_app = Celery(
     "worker",
@@ -19,6 +20,12 @@ celery_app.conf.update(
 celery_app.autodiscover_tasks([
     "app.tasks.tiktok"
 ])
+
+# Queue
+celery_app.conf.task_queue = (
+    Queue("tiktok_platform"),
+    Queue("thread_platform"),
+)
 
 
 # Định nghĩa lịch trình cho các tác vụ định kỳ

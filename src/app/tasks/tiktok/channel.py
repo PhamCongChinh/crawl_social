@@ -12,21 +12,18 @@ from app.modules.tiktok_scraper.models.source import SourceModel
 from app.modules.tiktok_scraper.services.channel import ChannelService
 from app.config import mongo_connection
 
-
-
 @celery_app.task(
-    queue="hourly_queue",
+    queue="tiktok_platform",
     name="app.tasks.tiktok.channel.crawl_tiktok_channels_hourly"
 )
-def crawl_tiktok_channels_hourly():
+def crawl_tiktok_channels_hourly(job_name: str, crawl_type: str):
     log.info("Task định kỳ - Bắt đầu crawl TikTok channels")
-    print("🕐 Crawling hourly...")
     async def do_crawl():
         try:
             await mongo_connection.connect()
             sources = await SourceService.get_sources_hourly()
             log.info(f"📦 Tổng số source: {len(sources)}")
-            batch_size = 5  # Số lượng source mỗi lần crawl
+            batch_size = 5
             batches = _chunk_sources(sources, batch_size)
             log.info(f"📦 Chia thành {len(batches)} batch, mỗi batch {batch_size} nguồn")
             for batch_index, batch in enumerate(batches, start=1):
@@ -38,54 +35,57 @@ def crawl_tiktok_channels_hourly():
                     data = source.model_dump(by_alias=True)
                     data["_id"] = str(data["_id"])
                     coroutines.append(crawl_tiktok_channel_direct(data))
-                await limited_gather(coroutines, limit=1)  # Giới hạn 3 request Scrapfly chạy cùng lúc
-                await asyncio.sleep(2)  # nghỉ 2 giây giữa batch
+                    await async_delay(1,2)
+                await limited_gather(coroutines, limit=1)  # Giới hạn request Scrapfly chạy cùng lúc
+                await async_delay(2,3)
             # log.info(f"✅ Task cha {job_id} hoàn tất toàn bộ")
+            await mongo_connection.disconnect()
         except Exception as e:
             log.error(e)
+            await mongo_connection.disconnect()
     return asyncio.run(do_crawl())
-    # asyncio.create_task(do_crawl())
 
 @celery_app.task(
     name="app.tasks.tiktok.channel.crawl_tiktok_channels",
+    queue="tiktok_channel",
     bind=True,
-    queue="tiktok_channel_queue"
 )
 def crawl_tiktok_channels(self, job_id: str, channel_id: str):
     log.info(f"Task {job_id} - {channel_id} bắt đầu")
     async def do_crawl():
-        try:
-            await mongo_connection.connect()
-            sources = await SourceService.get_sources()
-            log.info(f"📦 Tổng số source: {len(sources)}")
-            batch_size = 5  # Số lượng source mỗi lần crawl
-            batches = _chunk_sources(sources, batch_size)
-            log.info(f"📦 Chia thành {len(batches)} batch, mỗi batch {batch_size} nguồn")
-            for batch_index, batch in enumerate(batches, start=1):
-                log.info(f"🚀 Đang xử lý batch {batch_index}/{len(batches)} với {len(batch)} nguồn")
-                coroutines = []
-                for idx, source in enumerate(batch):
-                    overall_idx = (batch_index - 1) * batch_size + idx + 1
-                    log.info(f"🕐 [{overall_idx}/{len(sources)}] {source.source_url}")
-                    data = source.model_dump(by_alias=True)
-                    data["_id"] = str(data["_id"])
-                    coroutines.append(crawl_tiktok_channel_direct(data))
-                await limited_gather(coroutines, limit=1)  # Giới hạn 3 request Scrapfly chạy cùng lúc
-                await asyncio.sleep(2)  # nghỉ 2 giây giữa batch
+        print("Cral 111111111111111111111")
+        # try:
+        #     await mongo_connection.connect()
+        #     sources = await SourceService.get_sources()
+        #     log.info(f"📦 Tổng số source: {len(sources)}")
+        #     batch_size = 5  # Số lượng source mỗi lần crawl
+        #     batches = _chunk_sources(sources, batch_size)
+        #     log.info(f"📦 Chia thành {len(batches)} batch, mỗi batch {batch_size} nguồn")
+        #     for batch_index, batch in enumerate(batches, start=1):
+        #         log.info(f"🚀 Đang xử lý batch {batch_index}/{len(batches)} với {len(batch)} nguồn")
+        #         coroutines = []
+        #         for idx, source in enumerate(batch):
+        #             overall_idx = (batch_index - 1) * batch_size + idx + 1
+        #             log.info(f"🕐 [{overall_idx}/{len(sources)}] {source.source_url}")
+        #             data = source.model_dump(by_alias=True)
+        #             data["_id"] = str(data["_id"])
+        #             coroutines.append(crawl_tiktok_channel_direct(data))
+        #         await limited_gather(coroutines, limit=1)  # Giới hạn 3 request Scrapfly chạy cùng lúc
+        #         await asyncio.sleep(2)  # nghỉ 2 giây giữa batch
 
-            # Trong hàm async
-            # coroutines = []
-            # for idx, source in enumerate(sources):
-            #     log.info(f"🕐 [{idx+1}/{len(sources)}] {source.source_url}")
-            #     data = source.model_dump(by_alias=True)
-            #     data["_id"] = str(data["_id"])
-            #     coroutines.append(crawl_tiktok_channel_direct(data))
-            # # Giới hạn 3 request Scrapfly chạy cùng lúc
-            # await limited_gather(coroutines, limit=2)
-
-            log.info(f"✅ Task cha {job_id} hoàn tất toàn bộ")
-        except Exception as e:
-            log.error(e)
+        #     # Trong hàm async
+        #     # coroutines = []
+        #     # for idx, source in enumerate(sources):
+        #     #     log.info(f"🕐 [{idx+1}/{len(sources)}] {source.source_url}")
+        #     #     data = source.model_dump(by_alias=True)
+        #     #     data["_id"] = str(data["_id"])
+        #     #     coroutines.append(crawl_tiktok_channel_direct(data))
+        #     # # Giới hạn 3 request Scrapfly chạy cùng lúc
+        #     # await limited_gather(coroutines, limit=2)
+        #     await mongo_connection.disconnect()
+        #     log.info(f"✅ Task cha {job_id} hoàn tất toàn bộ")
+        # except Exception as e:
+        #     log.error(e)
     return asyncio.run(do_crawl())
 
 def _chunk_sources(sources: List, batch_size: int) -> List[List]:
@@ -96,7 +96,7 @@ async def crawl_tiktok_channel_direct(source: dict):
     try:
         await mongo_connection.connect()
         source_model = SourceModel(**source)
-        log.info(f"🔍 Crawling source: {source_model.source_url}")
+        log.info(f"🔍 Đang cào: {source_model.source_url}")
         data = await safe_scrape_with_delay(source_model.source_url)
         if not data:
             log.warning(f"⚠️ Không lấy được dữ liệu từ {source_model.source_url}")

@@ -4,8 +4,8 @@ from contextlib import asynccontextmanager
 from app.config import mongo_connection
 from app.config import postgres_connection
 
-from app.modules.scheduler.model import JobModel
-from app.modules.scheduler.service import scheduler, add_job
+from app.scheduler.model import JobModel
+from app.scheduler.service import scheduler, add_job
 
 import logging
 log = logging.getLogger(__name__) 
@@ -28,5 +28,5 @@ async def lifespan(app: FastAPI):
     yield
     scheduler.shutdown()
     await mongo_connection.disconnect()
-    await postgres_connection.disconnect()
+    await postgres_connection.close()
     log.info("Tắt ...")

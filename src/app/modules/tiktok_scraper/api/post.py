@@ -50,9 +50,9 @@ async def get_posts():
 @router.get("/posts/crawl")
 async def crawl_posts():
     try:
-        job_id = "tiktok"
-        channel_id = "tiktok"
-        crawl_tiktok_posts.delay(job_id, channel_id)
+        job_name = "tiktok"
+        crawl_type = "tiktok"
+        crawl_tiktok_posts_hourly.delay(job_name, crawl_type)
     except Exception as e:
         return {"status": "error", "message": str(e)}
     

@@ -24,7 +24,7 @@ two_hours_ago = now - timedelta(hours=24)
 class ChannelService:
 
     @staticmethod
-    async def get_posts_postgre(start_time: int = 1751734800, end_time: int = 1751821200) -> List[dict]:
+    async def get_posts_postgre(start_time: int, end_time: int) -> List[dict]:
         query = f"SELECT * FROM public.tbl_posts WHERE crawl_source_code = 'tt' AND org_id IN (2, 6) AND pub_time >= {start_time} AND pub_time <= {end_time}"
         results = await postgres_connection.fetch_all(query)
         print(f"Fetched {len(results)} sources from PostgreSQL")

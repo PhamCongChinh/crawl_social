@@ -7,7 +7,7 @@ import logging
 from app.modules.tiktok_scraper.models.source import SourceModel
 from app.modules.tiktok_scraper.scrapers.channel import scrape_channel
 from app.modules.tiktok_scraper.services.source import SourceService
-from app.tasks.tiktok.channel import crawl_tiktok_channels
+from app.tasks.tiktok.channel import crawl_tiktok_channels, crawl_tiktok_channels_hourly
 from app.utils.delay import async_delay
 log = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ async def get_channels():
         # channels = await ChannelService.get_channels_crawl()
         # channels = await ChannelService.get_videos_to_crawl()
         # channels = await ChannelService.get_channels_crawl()
-        channels = await ChannelService.get_channels_posts_hourly()
+        channels = await ChannelService.get_channels_posts_hourly()#"crawl_channel","tiktok"
         log.info(f"Đã lấy được {len(channels)} kênh")
         if not channels:
             raise HTTPException(status_code=204, detail="Không có dữ liệu")
@@ -37,7 +37,7 @@ async def crawl_channels():
     try:
         job_id = "tiktok1"
         channel_id = "tiktok1"
-        crawl_tiktok_channels.delay(job_id, channel_id)
+        crawl_tiktok_channels_hourly.delay(job_id, channel_id)
     except Exception as e:
         return {"status": "error", "message": str(e)}
 

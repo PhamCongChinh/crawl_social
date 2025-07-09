@@ -10,7 +10,7 @@ from app.config.logger import LoggingAPI
 
 from app.core.lifespan import lifespan
 
-from app.modules.scheduler.api import router as scheduler_router
+from app.scheduler.api import router as scheduler_router
 from app.modules.tiktok_scraper.api import router as tiktok_router
 from app.modules.thread_scraper.api import router as thread_router
 from app.modules.instagram_scraper.api import router as instagram_router

@@ -34,8 +34,8 @@ def dispatch_video_batches():
         videos = await ChannelModel.find(
             And(
                 ChannelModel.status == "pending",
-                ChannelModel.createTime > 1751302800,
-                ChannelModel.createTime < 1751821200
+                ChannelModel.createTime > 1751821200,
+                # ChannelModel.createTime < 1751821200
                 # ChannelModel.org_id != 0  # Chỉ lấy các video đã phân loại
             )
         ).to_list()

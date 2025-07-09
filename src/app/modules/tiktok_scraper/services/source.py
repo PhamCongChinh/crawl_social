@@ -19,7 +19,8 @@ class SourceService:
     @staticmethod
     async def get_sources():
         # return await SourceModel.find().sort("-_id").to_list()
-        return await SourceModel.find(SourceModel.org_id != 0).to_list()
+        return await SourceModel.find(SourceModel.org_id != 0).limit(5).to_list()
+        # return await SourceModel.find(SourceModel.org_id != 0).to_list()
 
     @staticmethod
     async def get_source_by_id(source_url: any):

@@ -2,9 +2,9 @@
 
 from fastapi import APIRouter, HTTPException
 
-from app.modules.scheduler.model import JobModel
-from app.modules.scheduler.models.jobs_log import JobLog
-from app.modules.scheduler.service import add_job, scheduler
+from app.scheduler.model import JobModel
+from app.scheduler.models.jobs_log import JobLog
+from app.scheduler.service import add_job, scheduler
 
 
 router = APIRouter()
@@ -14,8 +14,8 @@ async def create_job(job: JobModel):
     # Lưu vào Mongo
     await job.create()
     # Add vào scheduler
-    await add_job(job)
-    return {"message": "Job created", "job_id": job.id}
+    # await add_job(job)
+    return {"message": "Job created", "job_name": job.job_name}
 
 @router.get("")
 async def list_jobs():

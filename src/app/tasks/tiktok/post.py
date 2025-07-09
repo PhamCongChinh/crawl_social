@@ -24,14 +24,19 @@ VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
 
 
 @celery_app.task(
-    queue="hourly_queue",
+    queue="tiktok_platform",
     name="app.tasks.tiktok.channel.crawl_tiktok_posts_hourly"
 )
-def crawl_tiktok_posts_hourly():
+def crawl_tiktok_posts_hourly(job_name:str, crawl_type: str):
     async def do_crawl():
         try:
+            log.info("Lấy dữ liệu bài viết hằng ngày")
             await mongo_connection.connect()
             videos = await ChannelService.get_channels_posts_hourly()
+            if len(videos) > 0:
+                log.info("Không có dữ liệu trong ngày")
+                await mongo_connection.disconnect()
+                return
             ids = [str(v.id) for v in videos]
             video_dicts = [v.model_dump() for v in videos]
             await ChannelModel.find(In(ChannelModel.id, ids)).update_many({"$set": {"status": "processing"}})
@@ -39,14 +44,11 @@ def crawl_tiktok_posts_hourly():
             data_list_classified = []
             data_list_unclassified = []
             for index, video in enumerate(video_dicts):
-
-                print(f"🕐 [{index+1}/{len(video_dicts)}] {video['id']}")
-
+                log.info(f"🕐 [{index+1}/{len(video_dicts)}] {video['id']}")
                 if video["org_id"] == 0:
                     data_list_unclassified.append(video)
                 else:
                     data_list_classified.append(video)
-
             # Crawl & post classified
             if data_list_classified:
                 post_data_classified = await crawl_tiktok_post_list_direct_classified(data_list_classified)
@@ -56,21 +58,20 @@ def crawl_tiktok_posts_hourly():
             # Crawl & post unclassified
             if data_list_unclassified:
                 post_data_unclassified = await crawl_tiktok_post_list_direct_unclassified(data_list_unclassified)
-                print(f"post_data: {post_data_unclassified}")
+                log.info(f"post_data: {post_data_unclassified}")
                 if post_data_unclassified:
                     await postToESUnclassified(post_data_unclassified)
                     log.info(f"Đã thêm {len(post_data_unclassified)} video chưa phân loại vào ElasticSearch")
-            print(f"📦 Tổng số video đã lấy: {len(data_list_classified) + len(data_list_unclassified)}")
+            log.info(f"📦 Tổng số video đã lấy: {len(data_list_classified) + len(data_list_unclassified)}")
             await mongo_connection.disconnect()
         except Exception as e:
             log.error(f"❌ Lỗi khi cào dữ liệu: {e}")
-
+            await mongo_connection.disconnect()
     return asyncio.run(do_crawl())
 
 
 async def crawl_tiktok_post_list_direct_classified(channels: list[dict]):
     try:
-        # await mongo_connection.connect()
         log.info(f"📦 Tổng số channel: {len(channels)}")
         urls = [item["id"] for item in channels]
         posts_data = []
@@ -86,7 +87,6 @@ async def crawl_tiktok_post_list_direct_classified(channels: list[dict]):
             await ChannelModel.find(In(ChannelModel.id, processed_ids)).update_many(
                 {"$set": {"status": "done"}}
             )
-
         await async_delay(2, 4)  # Đảm bảo browser session trước shutdown
         return posts_data
 

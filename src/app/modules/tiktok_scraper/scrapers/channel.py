@@ -47,12 +47,13 @@ async def scrape_channel(url: str) -> List[Dict]:
         ScrapeConfig(
             url,
             asp=True,
-            country="VN",
+            # country="VN",
             wait_for_selector="//div[@data-e2e='user-post-item-list']",
             render_js=True,
             auto_scroll=False, #True
             rendering_wait=10000,
             # js=js,
+            cache=True,
             debug=True,
         )
     )

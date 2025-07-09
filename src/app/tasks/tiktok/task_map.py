@@ -1,10 +1,15 @@
-from app.tasks.tiktok.channel import crawl_tiktok_channels
-from app.tasks.tiktok.post import crawl_tiktok_posts
+from app.tasks.tiktok.channel import crawl_tiktok_channels_hourly
+from app.tasks.tiktok.post import crawl_tiktok_posts_hourly
+
+from app.tasks import count_down_1, count_down_2, count_down_3
 
 TASK_MAP = {
-    "channel": crawl_tiktok_channels,
+    # "channel": crawl_tiktok_channels_hourly,
     # "post": crawl_tiktok_posts,
     # "comment": crawl_tiktok_comments,
     # "profile": crawl_tiktok_profiles,
     # "search": crawl_tiktok_search,
+    "channel": count_down_1,
+    "post": crawl_tiktok_posts_hourly,
+    "comment": count_down_3
 }
