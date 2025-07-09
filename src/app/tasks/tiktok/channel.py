@@ -35,10 +35,9 @@ def crawl_tiktok_channels_hourly(job_name: str, crawl_type: str):
                     data = source.model_dump(by_alias=True)
                     data["_id"] = str(data["_id"])
                     coroutines.append(crawl_tiktok_channel_direct(data))
-                    await async_delay(1,2)
                 await limited_gather(coroutines, limit=1)  # Giới hạn request Scrapfly chạy cùng lúc
                 await async_delay(2,3)
-            # log.info(f"✅ Task cha {job_id} hoàn tất toàn bộ")
+            log.info(f"✅ Task cha {job_name} hoàn tất toàn bộ")
             await mongo_connection.disconnect()
         except Exception as e:
             log.error(e)
@@ -94,7 +93,6 @@ def _chunk_sources(sources: List, batch_size: int) -> List[List]:
 # Task con: xử lý crawl 1 source → Scrapfly → DB
 async def crawl_tiktok_channel_direct(source: dict):
     try:
-        await mongo_connection.connect()
         source_model = SourceModel(**source)
         log.info(f"🔍 Đang cào: {source_model.source_url}")
         data = await safe_scrape_with_delay(source_model.source_url)

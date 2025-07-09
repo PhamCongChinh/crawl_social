@@ -42,8 +42,6 @@ class SourceService:
         """
         Lấy danh sách các nguồn đã cập nhật trong vòng 1 giờ qua
         """
-        # one_hour_ago = now_vn() - timedelta(hours=1)
-        # return await SourceModel.find(SourceModel.updated_at >= one_hour_ago).to_list()
         return await SourceModel.find(SourceModel.org_id != 0).to_list()
 
     @staticmethod

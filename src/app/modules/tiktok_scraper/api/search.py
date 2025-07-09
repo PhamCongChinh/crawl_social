@@ -6,6 +6,7 @@ import logging
 
 from app.modules.tiktok_scraper.models.source import SourceModel
 from app.modules.tiktok_scraper.scrapers.channel import scrape_channel
+from app.modules.tiktok_scraper.scrapers.search import scrape_search
 from app.modules.tiktok_scraper.services.source import SourceService
 from app.tasks.tiktok.channel import crawl_tiktok_channels
 from app.tasks.tiktok.comment import crawl_tiktok_comments
@@ -21,9 +22,8 @@ router = APIRouter()
 
 @router.get("/search")
 async def get_comments():
-    url = f"https://www.tiktok.com/@officialhanoifc/video/7519445590686567688"
-    comments = await scrape_comments(url)
-    return comments
+    search = await scrape_search(keyword="Đỗ Mỹ Linh", max_search=18)
+    return search
 
 @router.get("/search/crawl")
 async def crawl_search():

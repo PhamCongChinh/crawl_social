@@ -43,7 +43,7 @@ def parse_search(response: ScrapeApiResponse) -> List[Dict]:
 async def obtain_session(url: str) -> str:
     """create a session to save the cookies and authorize the search API"""
     session_id = "tiktok_search_session"
-    await SCRAPFLY.async_scrape(ScrapeConfig(url, **BASE_CONFIG, render_js=True, session=session_id))
+    await SCRAPFLY.async_scrape(ScrapeConfig(url, **BASE_CONFIG, country="VN", render_js=True, session=session_id))
     return session_id
 
 
@@ -63,7 +63,7 @@ async def scrape_search(keyword: str, max_search: int, search_count: int = 12) -
         """form the reviews API URL and its pagination values"""
         base_url = "https://www.tiktok.com/api/search/general/full/?"
         params = {
-            "keyword": quote(keyword),
+            "keyword": keyword, #quote(keyword),
             "offset": cursor,  # the index to start from
             "search_id": generate_search_id(),
         }
@@ -77,6 +77,7 @@ async def scrape_search(keyword: str, max_search: int, search_count: int = 12) -
         ScrapeConfig(
             form_api_url(cursor=0),
             **BASE_CONFIG,
+            country="VN",
             headers={
                 "content-type": "application/json",
             },

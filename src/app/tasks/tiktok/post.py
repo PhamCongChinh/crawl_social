@@ -58,7 +58,6 @@ def crawl_tiktok_posts_hourly(job_name:str, crawl_type: str):
             # Crawl & post unclassified
             if data_list_unclassified:
                 post_data_unclassified = await crawl_tiktok_post_list_direct_unclassified(data_list_unclassified)
-                log.info(f"post_data: {post_data_unclassified}")
                 if post_data_unclassified:
                     await postToESUnclassified(post_data_unclassified)
                     log.info(f"Đã thêm {len(post_data_unclassified)} video chưa phân loại vào ElasticSearch")
@@ -72,7 +71,7 @@ def crawl_tiktok_posts_hourly(job_name:str, crawl_type: str):
 
 async def crawl_tiktok_post_list_direct_classified(channels: list[dict]):
     try:
-        log.info(f"📦 Tổng số channel: {len(channels)}")
+        log.info(f"📦 Tổng số channel: {len(channels)} classified")
         urls = [item["id"] for item in channels]
         posts_data = []
         data = await scrape_posts(urls)
@@ -95,8 +94,7 @@ async def crawl_tiktok_post_list_direct_classified(channels: list[dict]):
 
 async def crawl_tiktok_post_list_direct_unclassified(channels: list[dict]):
     try:
-        # await mongo_connection.connect()
-        log.info(f"📦 Tổng số channel: {len(channels)}")
+        log.info(f"📦 Tổng số channel: {len(channels)} unclassified")
         urls = [item["id"] for item in channels]
         posts_data = []
         data = await scrape_posts(urls)

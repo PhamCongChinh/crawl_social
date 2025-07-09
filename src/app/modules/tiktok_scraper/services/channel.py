@@ -70,10 +70,7 @@ class ChannelService:
 
     @staticmethod
     async def get_channels_comments_hourly():
-        """
-        Lấy danh sách các channel đã crawl trong vòng 1 giờ qua
-        """
-        query = f"SELECT * FROM public.tbl_posts WHERE crawl_source_code = 'tt' AND pub_time >= EXTRACT(EPOCH FROM (NOW() - INTERVAL '3 hours')) AND pub_time <= EXTRACT(EPOCH FROM NOW());"
+        query = f"SELECT * FROM public.tbl_posts WHERE crawl_source_code = 'tt' AND pub_time >= EXTRACT(EPOCH FROM (NOW() - INTERVAL '2 hours')) AND pub_time <= EXTRACT(EPOCH FROM NOW());"
         results = await postgres_connection.fetch_all(query)
         log.info(f"Đã lấy được {len(results)} bài viết từ PostgreSQL 2 giờ qua")
         return [dict(row) for row in results]  # optional: convert Record -> dict
@@ -97,8 +94,6 @@ class ChannelService:
             if not channels:
                 log.warning("Không có dữ liệu để upsert (bulk)")
                 return
-            
-            # now = datetime.now(timezone.utc)
             now = now_vn()
             operations = []
 
@@ -116,7 +111,6 @@ class ChannelService:
                 channel["source_channel"] = source.source_channel
                 channel["updated_at"] = now
 
-                channel.pop("crawled", None)
                 channel.pop("status", None)
 
                 update_doc = {
@@ -125,7 +119,6 @@ class ChannelService:
                         "updated_at": now,
                     },
                     "$setOnInsert": {
-                        "crawled": 0,  # 0: chưa crawl, 1: đã crawl, 2: đã crawl comments
                         "status": "pending",  # 0: chưa crawl, 1: đã crawl, 2: đã crawl comments
                         "created_at": now
                     }
@@ -145,26 +138,4 @@ class ChannelService:
             return result
         except Exception as e:
             log.error(e)
-    
-    @staticmethod
-    async def crawl_one_channel(source: dict):
-        await mongo_connection.connect()
-        source_model = SourceModel(**source)
-        data = await scrape_channel(source_model.source_url)
-        if not data:
-            log.warning(f"⚠️ Không có dữ liệu từ {source_model.source_url}")
-            return {"status": "no_data", "url": source_model.source_url}
-        
-        result = await ChannelService.upsert_channels_bulk(data, source=source_model)
-        
-        return {
-            "status": "success",
-            "url": source_model.source_url,
-            "total": len(data),
-            "matched": result.matched_count,
-            "inserted": result.upserted_count,
-            "modified": result.modified_count
-        }
-
-# Mới
     

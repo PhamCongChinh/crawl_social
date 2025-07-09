@@ -8,7 +8,7 @@ from app.modules.tiktok_scraper.models.source import SourceModel
 from app.modules.tiktok_scraper.scrapers.channel import scrape_channel
 from app.modules.tiktok_scraper.services.source import SourceService
 from app.tasks.tiktok.channel import crawl_tiktok_channels
-from app.tasks.tiktok.comment import crawl_tiktok_comments
+from app.tasks.tiktok.comment import crawl_tiktok_comments, crawl_tiktok_comments_hourly
 from app.utils.delay import async_delay
 log = logging.getLogger(__name__)
 
@@ -36,6 +36,6 @@ async def crawl_comments():
     try:
         job_id = "tiktok1"
         channel_id = "tiktok1"
-        crawl_tiktok_comments.delay(job_id, channel_id)
+        crawl_tiktok_comments_hourly.delay(job_id, channel_id)
     except Exception as e:
         return {"status": "error", "message": str(e)}
