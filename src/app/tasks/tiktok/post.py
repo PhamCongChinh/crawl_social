@@ -24,7 +24,7 @@ VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
 
 
 @celery_app.task(
-    queue="tiktok_platform",
+    queue="tiktok_posts",
     name="app.tasks.tiktok.channel.crawl_tiktok_posts_hourly"
 )
 def crawl_tiktok_posts_hourly(job_name:str, crawl_type: str):

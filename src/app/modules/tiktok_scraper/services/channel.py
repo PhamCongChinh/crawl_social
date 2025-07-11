@@ -3,6 +3,7 @@ from typing import List
 from zoneinfo import ZoneInfo
 from pymongo import UpdateOne
 from app.modules.tiktok_scraper.models.channel import ChannelModel
+from app.modules.tiktok_scraper.models.keyword import KeywordModel
 from app.modules.tiktok_scraper.models.source import SourceModel
 
 import logging
@@ -124,6 +125,56 @@ class ChannelService:
                 channel["source_type"] = source.source_type
                 channel["source_url"] = source.source_url
                 channel["source_channel"] = source.source_channel
+                channel["updated_at"] = now
+
+                channel.pop("status", None)
+
+                update_doc = {
+                    "$set": {
+                        **channel,
+                        "updated_at": now,
+                    },
+                    "$setOnInsert": {
+                        "status": "pending",  # 0: chưa crawl, 1: đã crawl, 2: đã crawl comments
+                        "created_at": now
+                    }
+                }
+                operations.append(
+                    UpdateOne(
+                        {"_id": _id},
+                        update_doc,
+                        upsert=True
+                    )
+                )
+            if not operations:
+                log.info("Không có operation nào được tạo cho bulk upsert.")
+                return
+            result = await ChannelModel.get_motor_collection().bulk_write(operations)
+            # log.info(f"Bulk upsert xong: inserted={result.upserted_count}, modified={result.modified_count}")
+            return result
+        except Exception as e:
+            log.error(e)
+
+    @staticmethod
+    async def upsert_channels_bulk_keyword(channels: list[dict], source: dict):
+        try:
+            if not channels:
+                log.warning("Không có dữ liệu để upsert (bulk)")
+                return
+            now = now_vn()
+            operations = []
+
+            for channel in channels:
+                if not channel.get("id"):
+                    log.warning("Channel không có ID, bỏ qua")
+                    continue
+
+                _id = f"https://www.tiktok.com/@{channel.get('author', {}).get('uniqueId', '')}/video/{channel['id']}"
+                channel["org_id"] = source["org_id"]
+                channel["source_name"] = channel.get('author', {}).get('nickname', '')
+                channel["source_type"] = source["source_type"]
+                channel["source_url"] = f"https://www.tiktok.com/@{channel.get('author', {}).get('uniqueId', '')}/video/{channel['id']}"
+                channel["source_channel"] = source["source_channel"]
                 channel["updated_at"] = now
 
                 channel.pop("status", None)

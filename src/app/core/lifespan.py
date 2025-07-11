@@ -18,10 +18,10 @@ async def lifespan(app: FastAPI):
     # Start APScheduler
     scheduler.start()
     # Khôi phục các job đã lưu
-    jobs_in_db = await JobModel.find_all().to_list()
-    for job in jobs_in_db:
-        if job.status == "active":
-            await add_job(job)
+    # jobs_in_db = await JobModel.find_all().to_list()
+    # for job in jobs_in_db:
+    #     if job.status == "active":
+    #         await add_job(job)
 
     await postgres_connection.connect()
     log.info("Scheduler đã được bật")

@@ -1,4 +1,4 @@
-version: "3.9"
+# version: "3.9"
 
 services:
   fastapi_app:
@@ -53,10 +53,10 @@ services:
   #   command: >
   #     poetry run celery -A app.worker worker --concurrency=3 --loglevel=info -Q priority_sources -n priority_sources@%h
 
-  worker_tiktok:
+  worker_tiktok_sources:
     build:
       context: .
-    container_name: worker_tiktok
+    container_name: worker_tiktok_sources
     volumes:
       - ./src:/app/src
       - ./pyproject.toml:/app/pyproject.toml
@@ -67,8 +67,41 @@ services:
       - redis_server
       - fastapi_app
     command: >
-      poetry run celery -A app.worker worker --concurrency=3 --loglevel=info -Q tiktok_platform -n tiktok@%h
-  
+      poetry run celery -A app.worker worker --concurrency=3 --loglevel=info -Q tiktok_sources -n tiktok_sources@%h
+  worker_tiktok_posts:
+    build:
+      context: .
+    container_name: worker_tiktok_posts
+    volumes:
+      - ./src:/app/src
+      - ./pyproject.toml:/app/pyproject.toml
+      - ./poetry.lock:/app/poetry.lock
+    env_file:
+      - .env
+    depends_on:
+      - redis_server
+      - fastapi_app
+    command: >
+      poetry run celery -A app.worker worker --concurrency=3 --loglevel=info -Q tiktok_posts -n tiktok_posts@%h
+  worker_tiktok_comments:
+    build:
+      context: .
+    container_name: worker_tiktok_comments
+    volumes:
+      - ./src:/app/src
+      - ./pyproject.toml:/app/pyproject.toml
+      - ./poetry.lock:/app/poetry.lock
+    env_file:
+      - .env
+    depends_on:
+      - redis_server
+      - fastapi_app
+    command: >
+      poetry run celery -A app.worker worker --concurrency=3 --loglevel=info -Q tiktok_comments -n tiktok_comments@%h
+
+
+
+
   worker_thread:
     build:
       context: .

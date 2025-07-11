@@ -2,18 +2,26 @@ import asyncio
 from datetime import datetime
 import json
 import logging
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from bson import Int64
 
 from app.modules.elastic_search.service import postToES, postToESUnclassified
+from app.modules.tiktok_scraper.models.channel import ChannelModel
 from app.modules.tiktok_scraper.scrapers.search import scrape_search
+from app.modules.tiktok_scraper.services.channel import ChannelService
+from app.modules.tiktok_scraper.services.search import SearchService
+from app.utils.delay import async_delay
 log = logging.getLogger(__name__)
 
 from app.config import mongo_connection
 from app.worker import celery_app
 
 VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
+
+output = Path(__file__).parent / "results"
+output.mkdir(exist_ok=True)
 
 @celery_app.task(
     name="app.tasks.tiktok.post.crawl_tiktok_search_hourly",
@@ -23,26 +31,38 @@ def crawl_tiktok_search(job_name: str, crawl_type: str):
     async def do_crawl():
         try:
             await mongo_connection.connect()
-            # search = await scrape_search(keyword="Đỗ Mỹ Linh", max_search=18)
-            search = await scrape_search(keyword="Đỗ Mỹ Linh", max_search=18)
-            
-            # print(json.dumps(data, indent=2, ensure_ascii=False))
-
-            # await postToESUnclassified(data)
-            # await postToES(data)
-            if len(search) == 0:
+            keywords = await SearchService.get_keywords()
+            if len(keywords) == 0:
                 await mongo_connection.disconnect()
                 return
-            
-            data = flatten_post_list(search)
-            await postToES(data)
-
+            BATCH_SIZE = 5
+            keyword_dicts = [k.model_dump() for k in keywords]
+            batches = [keyword_dicts[i:i + BATCH_SIZE] for i in range(0, len(keyword_dicts), BATCH_SIZE)]
+            log.info(f"📦 Tổng cộng {len(keywords)} từ khóa, chia thành {len(batches)} batch (mỗi batch {BATCH_SIZE} từ khóa)")
+            for i, batch in enumerate(batches, start=1):
+                log.info(f"🚀 Batch {i}/{len(batches)}: {len(batch)} từ khóa")
+                await _crawl_batch_async(batch, i, len(batches))
+                await async_delay(2,10)
         except Exception as e:
             log.error(e)
     return asyncio.run(do_crawl())
 
 
-
+async def _crawl_batch_async(keywords: list[dict], batch_index: int, total_batches: int):
+    log.info(f"🔧 Bắt đầu xử lý batch {batch_index}/{total_batches} với {len(keywords)} từ khóa")
+    for index, keyword in enumerate(keywords):
+        log.info(f"🕐 [{index + 1}/{len(keywords)}] Từ khóa: {keyword['keyword']}")
+        scrape_data = await scrape_search(keyword=keyword["keyword"], max_search=18)
+        with open(output.joinpath("search.json"), "w", encoding="utf-8") as file:
+            json.dump(scrape_data, file, indent=2, ensure_ascii=False)
+        if not scrape_data:
+            log.warning(f"⚠️ Không lấy được dữ liệu từ {keyword['keyword']}")
+            return
+        # result = await ChannelService.upsert_channels_bulk_keyword(scrape_data, keyword)
+        # log.info(
+        #     f"✅ Upsert xong: matched={result.matched_count}, "
+        #     f"inserted={result.upserted_count}, modified={result.modified_count}"
+        # )
 
 def flatten_post_data(raw: dict) -> dict:
     return {

@@ -1,17 +1,23 @@
+import os
 import datetime
-import json
 import secrets
-from typing import Dict, List
-from scrapfly import ScrapeApiResponse, ScrapeConfig
+import json
+import uuid
 import jmespath
-
+from typing import Dict, List
 from urllib.parse import urlencode, quote, urlparse, parse_qs
+from scrapfly import ScrapeConfig, ScrapflyClient, ScrapeApiResponse
 
 import logging
 log = logging.getLogger(__name__)
 
-from app.core.scrapfly import SCRAPFLY, BASE_CONFIG
-
+from app.core.scrapfly import SCRAPFLY
+BASE_CONFIG = {
+    "asp": True,
+    # "proxy_pool": "public_residential_pool"
+    "country": "VN",
+    "proxy_pool": "public_datacenter_pool",
+}
 
 def parse_search(response: ScrapeApiResponse) -> List[Dict]:
     """parse search data from the API response"""
@@ -43,7 +49,7 @@ def parse_search(response: ScrapeApiResponse) -> List[Dict]:
 async def obtain_session(url: str) -> str:
     """create a session to save the cookies and authorize the search API"""
     session_id = "tiktok_search_session"
-    await SCRAPFLY.async_scrape(ScrapeConfig(url, **BASE_CONFIG, country="VN", render_js=True, session=session_id))
+    await SCRAPFLY.async_scrape(ScrapeConfig(url, **BASE_CONFIG, render_js=True, session=session_id))
     return session_id
 
 
@@ -63,13 +69,17 @@ async def scrape_search(keyword: str, max_search: int, search_count: int = 12) -
         """form the reviews API URL and its pagination values"""
         base_url = "https://www.tiktok.com/api/search/general/full/?"
         params = {
-            "keyword": keyword, #quote(keyword),
+            "keyword": keyword, #quote(keyword)
             "offset": cursor,  # the index to start from
             "search_id": generate_search_id(),
         }
         return base_url + urlencode(params)
 
-    log.info("obtaining a session for the search API")
+    # print("DEBUG quote func:", quote)
+    # print("DEBUG keyword type:", type(keyword), "| value:", keyword)
+    # print("DEBUG quoted keyword:", urllib.parse.quote(keyword))
+
+    log.info("Đang thiết lập session gọi API tìm kiếm TikTok...")
     session_id = await obtain_session(url="https://www.tiktok.com/search?q=" + quote(keyword))
 
     log.info("scraping the first search batch")
@@ -77,7 +87,6 @@ async def scrape_search(keyword: str, max_search: int, search_count: int = 12) -
         ScrapeConfig(
             form_api_url(cursor=0),
             **BASE_CONFIG,
-            country="VN",
             headers={
                 "content-type": "application/json",
             },

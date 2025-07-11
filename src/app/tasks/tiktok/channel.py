@@ -13,15 +13,46 @@ from app.modules.tiktok_scraper.services.channel import ChannelService
 from app.config import mongo_connection
 
 @celery_app.task(
-    queue="tiktok_platform",
-    name="app.tasks.tiktok.channel.crawl_tiktok_channels_hourly"
+    name="app.tasks.tiktok.crawl_tiktok_channels_classified",
+    queue="tiktok_sources"
 )
-def crawl_tiktok_channels_hourly(job_name: str, crawl_type: str):
+def crawl_tiktok_channels_classified(job_name: str, crawl_type: str):
+    async def do_crawl():
+        try:
+            await mongo_connection.connect()
+            sources = await SourceService.get_sources_classified()
+            log.info(f"📦 Tổng số source: {len(sources)}")
+            batch_size = 5
+            batches = _chunk_sources(sources, batch_size)
+            log.info(f"📦 Chia thành {len(batches)} batch, mỗi batch {batch_size} nguồn")
+            for batch_index, batch in enumerate(batches, start=1):
+                log.info(f"🚀 Đang xử lý batch {batch_index}/{len(batches)} với {len(batch)} nguồn")
+                coroutines = []
+                for idx, source in enumerate(batch):
+                    overall_idx = (batch_index - 1) * batch_size + idx + 1
+                    log.info(f"🕐 [{overall_idx}/{len(sources)}] {source.source_url}")
+                    data = source.model_dump(by_alias=True)
+                    data["_id"] = str(data["_id"])
+                    coroutines.append(crawl_tiktok_channel_direct(data))
+                await limited_gather(coroutines, limit=1)  # Giới hạn request Scrapfly chạy cùng lúc
+                await async_delay(2,3)
+            log.info(f"✅ Task cha {job_name} hoàn tất toàn bộ")
+            await mongo_connection.disconnect()
+        except Exception as e:
+            log.error(e)
+            await mongo_connection.disconnect()
+    return asyncio.run(do_crawl())
+
+@celery_app.task(
+    queue="tiktok_sources",
+    name="app.tasks.tiktok.channel.crawl_tiktok_channels_hourly_public"
+)
+def crawl_tiktok_channels_unclassified(job_name: str, crawl_type: str):
     log.info("Task định kỳ - Bắt đầu crawl TikTok channels")
     async def do_crawl():
         try:
             await mongo_connection.connect()
-            sources = await SourceService.get_sources_hourly()
+            sources = await SourceService.get_sources_unclassified()
             log.info(f"📦 Tổng số source: {len(sources)}")
             batch_size = 5
             batches = _chunk_sources(sources, batch_size)

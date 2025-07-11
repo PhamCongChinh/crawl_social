@@ -38,11 +38,12 @@ class SourceService:
         
 
     @staticmethod
-    async def get_sources_hourly():
-        """
-        Lấy danh sách các nguồn đã cập nhật trong vòng 1 giờ qua
-        """
+    async def get_sources_classified():
         return await SourceModel.find(SourceModel.org_id != 0).to_list()
+    
+    @staticmethod
+    async def get_sources_unclassified():
+        return await SourceModel.find(SourceModel.org_id == 0).to_list()
 
     @staticmethod
     async def upsert_source_batch(sources: list[dict]) -> int:

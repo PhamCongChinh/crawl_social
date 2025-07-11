@@ -23,6 +23,7 @@ celery_app.autodiscover_tasks([
 
 # Queue
 celery_app.conf.task_queue = (
-    Queue("tiktok_platform"),
-    Queue("thread_platform"),
+    Queue("tiktok_sources"),
+    Queue("tiktok_posts"),
+    Queue("tiktok_comments"),
 )
