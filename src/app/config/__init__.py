@@ -1,6 +1,7 @@
 from app.config.db_mongo import MongoDB
 from app.config.db_postgresql import PostgresDB
 
+from app.modules.tiktok_scraper.models.video import VideoModel
 from app.modules.tiktok_scraper.models.keyword import KeywordModel
 from app.scheduler.model import JobModel
 from app.scheduler.models.jobs_log import JobLog
@@ -15,7 +16,8 @@ mongo_connection = MongoDB(
         PostModel,
         KeywordModel,
         JobModel,
-        JobLog
+        JobLog,
+        VideoModel
     ]
 )
 

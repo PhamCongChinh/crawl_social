@@ -22,6 +22,7 @@ log = logging.getLogger(__name__)
 from app.config import mongo_connection
 VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
 
+BATCH_SIZE = 50
 
 @celery_app.task(
     queue="tiktok_posts",
@@ -37,31 +38,51 @@ def crawl_tiktok_posts_hourly(job_name:str, crawl_type: str):
                 log.info("Không có dữ liệu trong ngày")
                 await mongo_connection.disconnect()
                 return
-            ids = [str(v.id) for v in videos]
+            
             video_dicts = [v.model_dump() for v in videos]
-            await ChannelModel.find(In(ChannelModel.id, ids)).update_many({"$set": {"status": "processing"}})
-            log.info(f"🚀 Đang cào {len(video_dicts)} video")
-            data_list_classified = []
-            data_list_unclassified = []
-            for index, video in enumerate(video_dicts):
-                log.info(f"🕐 [{index+1}/{len(video_dicts)}] {video['id']}")
-                if video["org_id"] == 0:
-                    data_list_unclassified.append(video)
-                else:
-                    data_list_classified.append(video)
-            # Crawl & post classified
-            if data_list_classified:
-                post_data_classified = await crawl_tiktok_post_list_direct_classified(data_list_classified)
-                if post_data_classified:
-                    await postToES(post_data_classified)
-                    log.info(f"Đã thêm {len(post_data_classified)} video đã phân loại vào ElasticSearch")
-            # Crawl & post unclassified
-            if data_list_unclassified:
-                post_data_unclassified = await crawl_tiktok_post_list_direct_unclassified(data_list_unclassified)
-                if post_data_unclassified:
-                    await postToESUnclassified(post_data_unclassified)
-                    log.info(f"Đã thêm {len(post_data_unclassified)} video chưa phân loại vào ElasticSearch")
-            log.info(f"📦 Tổng số video đã lấy: {len(data_list_classified) + len(data_list_unclassified)}")
+            # Chia batch
+            batches = [video_dicts[i:i + BATCH_SIZE] for i in range(0, len(video_dicts), BATCH_SIZE)]
+            log.info(f"📦 Tổng cộng {len(videos)} video, chia thành {len(batches)} batch (mỗi batch {BATCH_SIZE} video)")
+            for i, batch in enumerate(batches, start=1):
+                log.info(f"🚀 Batch {i}/{len(batches)}: {len(batch)} video")
+
+                # 1. Update status
+                ids = [v["id"] for v in batch]
+                await ChannelModel.find(In(ChannelModel.id, ids)).update_many({
+                    "$set": {"status": "processing"}
+                })
+
+                await _crawl_batch_async(batch, i, len(batches))  # ✅ xử lý tuần tự từng batch
+                await async_delay(90,120)
+            return {"message": "Đã xử lý toàn bộ batch", "total_videos": len(videos)}
+
+            # ids = [str(v.id) for v in videos]
+            # video_dicts = [v.model_dump() for v in videos]
+            # await ChannelModel.find(In(ChannelModel.id, ids)).update_many({"$set": {"status": "processing"}})
+            # log.info(f"🚀 Đang cào {len(video_dicts)} video")
+
+
+            # data_list_classified = []
+            # data_list_unclassified = []
+            # for index, video in enumerate(video_dicts):
+            #     log.info(f"🕐 [{index+1}/{len(video_dicts)}] {video['id']}")
+            #     if video["org_id"] == 0:
+            #         data_list_unclassified.append(video)
+            #     else:
+            #         data_list_classified.append(video)
+            # # Crawl & post classified
+            # if data_list_classified:
+            #     post_data_classified = await crawl_tiktok_post_list_direct_classified(data_list_classified)
+            #     if post_data_classified:
+            #         await postToES(post_data_classified)
+            #         log.info(f"Đã thêm {len(post_data_classified)} video đã phân loại vào ElasticSearch")
+            # # Crawl & post unclassified
+            # if data_list_unclassified:
+            #     post_data_unclassified = await crawl_tiktok_post_list_direct_unclassified(data_list_unclassified)
+            #     if post_data_unclassified:
+            #         await postToESUnclassified(post_data_unclassified)
+            #         log.info(f"Đã thêm {len(post_data_unclassified)} video chưa phân loại vào ElasticSearch")
+            # log.info(f"📦 Tổng số video đã lấy: {len(data_list_classified) + len(data_list_unclassified)}")
             await mongo_connection.disconnect()
         except Exception as e:
             log.error(f"❌ Lỗi khi cào dữ liệu: {e}")
@@ -199,7 +220,7 @@ async def crawl_posts(from_date: int, to_date: int):
         log.error(e)
 
 
-BATCH_SIZE = 50
+
 @celery_app.task(
     name="app.tasks.tiktok.post.crawl_tiktok_posts",
 )

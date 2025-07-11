@@ -13,7 +13,7 @@ from app.modules.tiktok_scraper.services.source import SourceService
 
 from app.tasks.tiktok.channel import crawl_tiktok_channels
 from app.tasks.tiktok.comment import crawl_tiktok_comments
-from app.tasks.tiktok.search import crawl_tiktok_search
+from app.tasks.tiktok.search import crawl_tiktok_search, crawl_tiktok_search_video
 from app.utils.delay import async_delay
 log = logging.getLogger(__name__)
 
@@ -45,5 +45,14 @@ async def crawl_keyword():
         job_id = "tiktok1"
         channel_id = "tiktok1"
         crawl_tiktok_search.delay(job_id, channel_id)
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+    
+@router.get("/search/crawl/post")
+async def crawl_posts():
+    try:
+        job_id = "tiktok1"
+        channel_id = "tiktok1"
+        crawl_tiktok_search_video.delay(job_id, channel_id)
     except Exception as e:
         return {"status": "error", "message": str(e)}

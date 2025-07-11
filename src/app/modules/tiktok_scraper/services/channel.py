@@ -91,10 +91,12 @@ class ChannelService:
     @staticmethod
     async def get_channels_posts_hourly():
         vn_now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
-        hour_ago = vn_now - timedelta(hours=24)
+        hour_ago = vn_now - timedelta(hours=9)
 
         from_timestamp = int(hour_ago.timestamp())
         to_timestamp = int(vn_now.timestamp())
+        log.info(from_timestamp)
+        log.info(to_timestamp)
 
         return await ChannelModel.find(
             And(

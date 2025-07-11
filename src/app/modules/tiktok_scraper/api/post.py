@@ -46,6 +46,7 @@ async def crawl_posts():
         crawl_tiktok_posts_hourly.delay(job_name, crawl_type)
     except Exception as e:
         return {"status": "error", "message": str(e)}
+    
 
 @router.post("/posts/crawl/backdate")
 async def crawl_posts_backdate(request: CrawlPostBackdateRequest):

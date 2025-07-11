@@ -19,10 +19,7 @@ router = APIRouter()
 async def get_channels():
     try:
         log.info("Đang lấy dữ liệu Channels")
-        # channels = await ChannelService.get_channels_crawl()
-        # channels = await ChannelService.get_videos_to_crawl()
-        # channels = await ChannelService.get_channels_crawl()
-        channels = await ChannelService.get_channels_posts_hourly()#"crawl_channel","tiktok"
+        channels = await ChannelService.get_channels_posts_hourly()
         log.info(f"Đã lấy được {len(channels)} kênh")
         if not channels:
             raise HTTPException(status_code=204, detail="Không có dữ liệu")
@@ -45,6 +42,9 @@ async def crawl_channels_unclassified():
         crawl_tiktok_channels_unclassified.delay("unclassified", "tiktok")
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+
+
 
 
 
