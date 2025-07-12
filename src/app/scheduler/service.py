@@ -77,7 +77,7 @@ async def add_job(metadata: JobModel):
             func=task_func.delay,
             trigger=trigger,
             id=job_name,
-            args=[job_name, metadata.crawl_type],
+            args=[job_name],
             name=f"{metadata.job_name}-{metadata.crawl_type}",
             replace_existing=True,
             misfire_grace_time=30 # cho phép job trễ 30s vẫn chạy

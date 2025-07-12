@@ -1,3 +1,4 @@
+import asyncio
 import json
 from typing import Dict, List
 from scrapfly import ScrapeApiResponse, ScrapeConfig
@@ -43,21 +44,54 @@ async def scrape_channel(url: str) -> List[Dict]:
     # js code for scrolling down with maximum 15 scrolls. It stops at the end without using the full iterations
     js = """const scrollToEnd = (i = 0) => (window.innerHeight + window.scrollY >= document.body.scrollHeight || i >= 15) ? (console.log("Reached the bottom or maximum iterations. Stopping further iterations."), setTimeout(() => console.log("Waited 10 seconds after all iterations."), 10000)) : (window.scrollTo(0, document.body.scrollHeight), setTimeout(() => scrollToEnd(i + 1), 5000)); scrollToEnd();"""
     log.info(f"Đang thu thập dữ liệu từ {url} để lấy dữ liệu bài viết.")
-    response = await SCRAPFLY.async_scrape(
-        ScrapeConfig(
-            url,
-            asp=True,
-            # country="VN",
-            wait_for_selector="//div[@data-e2e='user-post-item-list']",
-            render_js=True,
-            auto_scroll=False, #True
-            rendering_wait=10000,
-            # js=js,
-            cache=True,
-            debug=True,
-        )
-    )
+    # response = await SCRAPFLY.async_scrape(
+    #     ScrapeConfig(
+    #         url,
+    #         asp=True,
+    #         # country="AU",
+    #         wait_for_selector="//div[@data-e2e='user-post-item-list']",
+    #         render_js=True,
+    #         auto_scroll=True,
+    #         rendering_wait=3000,
+    #         # js=js,
+    #         retry=False,
+    #         cache=True,
+    #         cache_ttl=86000,
+    #         timeout=15,
+    #         debug=False,
+    #     )
+    # )
+    # data = parse_channel(response)
+    # log.info(f"Đã quét được {len(data)} bài viết từ kênh {url}")
+    # return data
+    max_attempts = 3
+    for attempt in range(max_attempts):
+        for attempt in range(max_attempts):
+            try:
+                response = await SCRAPFLY.async_scrape(ScrapeConfig(
+                    url=url,
+                    asp=True,
+                    render_js=True,
+                    auto_scroll=False,
+                    wait_for_selector="//div[@data-e2e='user-post-item-list']",
+                    cache=True,
+                    cache_ttl=86400,
+                    timeout=30000,         # 15s thôi
+                    debug=False,
+                    retry=False,
+                ))
+                if response.cost:
+                    log.info(f"🟢 [CACHE] {url} → hit cache ✅ (cost: ~0 credits)")
+                else:
+                    log.info(f"🔵 [LIVE]  {url} → live scrape ⚠️ (cost: ~150–250 credits)")
+                data = parse_channel(response)
+                log.info(f"Đã quét được {len(data)} bài viết từ kênh {url}")
+                return data
+            except Exception as e:
+                if attempt < max_attempts - 1:
+                    log.warning(f"Retry {attempt+1}/{max_attempts} → {url} vì {e}")
+                    await asyncio.sleep(2 + attempt)
+                else:
+                    raise
         
-    data = parse_channel(response)
-    log.info(f"Đã quét được {len(data)} bài viết từ kênh {url}")
-    return data
+    

@@ -23,7 +23,15 @@ from pydantic import BaseModel, Field
 class JobModel(Document):
     # id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     job_name: str
-    crawl_type: Literal["tiktok" ,"channel", "post", "comment", "profile", "search"]
+    crawl_type: Literal[
+        "video_classified" ,
+        "channel", 
+        "post", 
+        "comment", 
+        "profile", 
+        "video_unclassified",
+        "video_keyword"
+    ]
     trigger_type: Literal["cron", "interval"]
     cron: Optional[str] = None
     interval_seconds: Optional[int] = None

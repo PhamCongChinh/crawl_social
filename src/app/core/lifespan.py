@@ -14,16 +14,15 @@ log = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     log.info("Bắt đầu...")
     await mongo_connection.connect()
+    await postgres_connection.connect()
 
     # Start APScheduler
     scheduler.start()
     # Khôi phục các job đã lưu
-    # jobs_in_db = await JobModel.find_all().to_list()
-    # for job in jobs_in_db:
-    #     if job.status == "active":
-    #         await add_job(job)
-
-    await postgres_connection.connect()
+    jobs_in_db = await JobModel.find_all().to_list()
+    for job in jobs_in_db:
+        if job.status == "active":
+            await add_job(job)
     log.info("Scheduler đã được bật")
     yield
     scheduler.shutdown()

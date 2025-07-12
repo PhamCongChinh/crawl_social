@@ -75,6 +75,43 @@ def crawl_tiktok_channels_unclassified(job_name: str, crawl_type: str):
             await mongo_connection.disconnect()
     return asyncio.run(do_crawl())
 
+def _chunk_sources(sources: List, batch_size: int) -> List[List]:
+    return [sources[i:i + batch_size] for i in range(0, len(sources), batch_size)]
+
+# Task con: xử lý crawl 1 source → Scrapfly → DB
+async def crawl_tiktok_channel_direct(source: dict):
+    try:
+        source_model = SourceModel(**source)
+        log.info(f"🔍 Đang cào: {source_model.source_url}")
+        data = await safe_scrape_with_delay(source_model.source_url)
+        if not data:
+            log.warning(f"⚠️ Không lấy được dữ liệu từ {source_model.source_url}")
+            return
+        result = await ChannelService.upsert_channels_bulk(data, source=source_model)
+        log.info(
+            f"✅ Upsert xong {source_model.source_url}: matched={result.matched_count}, "
+            f"inserted={result.upserted_count}, modified={result.modified_count}"
+        )
+    except Exception as e:
+        log.error(f"❌ Lỗi crawl {source.get('source_url')}: {e}")
+
+
+async def safe_scrape_with_delay(url: str, max_retries: int = 3):
+    for attempt in range(1, max_retries + 1):
+        try:
+            data = await scrape_channel(url)
+            await async_delay(2, 4)  # Đảm bảo browser session trước shutdown
+            return data
+        except Exception as e:
+            log.warning(f"❗ Attempt {attempt}/{max_retries} - Lỗi scrape: {e}")
+            if attempt < max_retries:
+                await async_delay(5, 8)  # Delay lâu hơn nếu lỗi
+            else:
+                log.error(f"❌ Bỏ qua URL sau {max_retries} lần thử: {url}")
+                return None
+            
+
+# Chua biet
 @celery_app.task(
     name="app.tasks.tiktok.channel.crawl_tiktok_channels",
     queue="tiktok_channel",
@@ -117,38 +154,3 @@ def crawl_tiktok_channels(self, job_id: str, channel_id: str):
         # except Exception as e:
         #     log.error(e)
     return asyncio.run(do_crawl())
-
-def _chunk_sources(sources: List, batch_size: int) -> List[List]:
-    return [sources[i:i + batch_size] for i in range(0, len(sources), batch_size)]
-
-# Task con: xử lý crawl 1 source → Scrapfly → DB
-async def crawl_tiktok_channel_direct(source: dict):
-    try:
-        source_model = SourceModel(**source)
-        log.info(f"🔍 Đang cào: {source_model.source_url}")
-        data = await safe_scrape_with_delay(source_model.source_url)
-        if not data:
-            log.warning(f"⚠️ Không lấy được dữ liệu từ {source_model.source_url}")
-            return
-        result = await ChannelService.upsert_channels_bulk(data, source=source_model)
-        log.info(
-            f"✅ Upsert xong {source_model.source_url}: matched={result.matched_count}, "
-            f"inserted={result.upserted_count}, modified={result.modified_count}"
-        )
-    except Exception as e:
-        log.error(f"❌ Lỗi crawl {source.get('source_url')}: {e}")
-
-
-async def safe_scrape_with_delay(url: str, max_retries: int = 3):
-    for attempt in range(1, max_retries + 1):
-        try:
-            data = await scrape_channel(url)
-            await async_delay(2, 4)  # Đảm bảo browser session trước shutdown
-            return data
-        except Exception as e:
-            log.warning(f"❗ Attempt {attempt}/{max_retries} - Lỗi scrape: {e}")
-            if attempt < max_retries:
-                await async_delay(5, 8)  # Delay lâu hơn nếu lỗi
-            else:
-                log.error(f"❌ Bỏ qua URL sau {max_retries} lần thử: {url}")
-                return None
