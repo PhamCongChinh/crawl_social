@@ -53,7 +53,6 @@ async def _crawl_video_all_classified(job_id: str):
                     queue="tiktok_videos",
                     countdown=countdown,
                 )
-                break
     except Exception as e:
         log.error(f"❌ Lỗi crawl_video_all: {e}")
 
@@ -116,7 +115,6 @@ async def _crawl_video_all_unclassified(job_id: str):
                     queue="tiktok_videos",
                     countdown=countdown,
                 )
-                break
     except Exception as e:
         log.error(f"❌ Lỗi crawl_video_all: {e}")
 
@@ -178,7 +176,6 @@ async def _crawl_video_all_keyword(job_id: str):
                     queue="tiktok_videos",
                     countdown=countdown,
                 )
-                break
     except Exception as e:
         log.error(f"❌ Lỗi crawl_video_all: {e}")
 
