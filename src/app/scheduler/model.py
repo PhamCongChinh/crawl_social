@@ -24,7 +24,7 @@ class JobModel(Document):
     # id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     job_name: str
     crawl_type: Literal[
-        "video_classified" ,
+        "video_classified",
         "channel", 
         "post", 
         "comment", 
