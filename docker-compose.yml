@@ -83,7 +83,7 @@ services:
       - redis_server
       - fastapi_app
     command: >
-      poetry run celery -A app.worker worker --concurrency=1 --loglevel=info -Q tiktok_posts -n tiktok_posts@%h
+      poetry run celery -A app.worker worker --concurrency=2 --loglevel=info -Q tiktok_posts -n tiktok_posts@%h
   
   tiktok_videos:
     build:

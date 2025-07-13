@@ -45,19 +45,17 @@ async def _crawl_video_all_posts(job_id: str):
             log.info(f"Upsert thành công")
             await async_delay(1,2)
             videos = await VideoService.get_videos_daily()
-            # videos = await VideoService.get_videos()
             log.info(f"Số video trong ngày chưa crawl: {len(videos)}")
+            # 1. Update status
+            video_ids = [v.video_id for v in videos]
+            await VideoModel.find(In(VideoModel.video_id, video_ids)).update_many({
+                "$set": {"status": "processing"}
+            })
             chunk_size = constant.CHUNK_SIZE_POST
             for i in range(0, len(videos), chunk_size):
                 chunk = videos[i:i + chunk_size]
                 video_dicts = [s.model_dump(mode="json") for s in chunk]
                 countdown = random.randint(1, 4)
-
-                # 1. Update status
-                video_ids = [v.video_id for v in chunk]
-                await VideoModel.find(In(VideoModel.video_id, video_ids)).update_many({
-                    "$set": {"status": "processing"}
-                })
 
                 log.info(f"[{job_id}] 🚀 Gửi batch {i//chunk_size + 1}: {len(video_dicts)} video")
                 crawl_video_batch_posts.apply_async(
@@ -65,7 +63,6 @@ async def _crawl_video_all_posts(job_id: str):
                     queue="tiktok_posts",
                     countdown=countdown,
                 )
-                # break
     except Exception as e:
         log.error(f"❌ Lỗi crawl_video_all: {e}")
 
@@ -83,7 +80,7 @@ async def _crawl_video_batch_posts(video_dicts: list[dict], job_id: str = None):
             data_list_classified = []
             data_list_unclassified = []
             for index, video in enumerate(videos):
-                log.info(f"🕐 [{index+1}/{len(videos)}] {video['id']}")
+                log.info(f"🕐 [{index+1}/{len(videos)}] {video['video_url']}")
                 if video["org_id"] == 0:
                     data_list_unclassified.append(video)
                 else:
@@ -108,10 +105,8 @@ async def _crawl_video_batch_posts(video_dicts: list[dict], job_id: str = None):
     except Exception as e:
         log.error(f"❌ Lỗi crawl_video_all: {e}")
 
-
 async def crawl_tiktok_post_list_direct_classified(channels: list[dict]):
     try:
-        print(channels)
         log.info(f"📦 Tổng số channel: {len(channels)} classified")
         urls = [item["video_url"] for item in channels]
         data = await scrape_posts(urls)
@@ -135,7 +130,6 @@ async def crawl_tiktok_post_list_direct_classified(channels: list[dict]):
 
 async def crawl_tiktok_post_list_direct_unclassified(channels: list[dict]):
     try:
-        print(channels)
         log.info(f"📦 Tổng số channel: {len(channels)} unclassified")
         urls = [item["video_url"] for item in channels]
         posts_data = []
@@ -151,7 +145,6 @@ async def crawl_tiktok_post_list_direct_unclassified(channels: list[dict]):
             await VideoModel.find(In(VideoModel.video_id, processed_ids)).update_many(
                 {"$set": {"status": "done"}}
             )
-
         await async_delay(2, 4)  # Đảm bảo browser session trước shutdown
         return posts_data
 
@@ -232,14 +225,67 @@ def flatten_post_data_unclassified (raw: dict, channel: dict) -> dict:
         "crawl_bot": "tiktok_post",
     }
 
+# Backdate
+@celery_app.task(
+    queue="tiktok_posts",
+    name="app.tasks.tiktok.post.crawl_tiktok_all_posts_backdate"
+)
+def crawl_tiktok_all_posts_backdate(job_id: str, from_date: int, to_date: int):
+    async_to_sync(_crawl_video_all_posts_backdate)(job_id, from_date, to_date)
 
-
-
-async def crawl_posts(from_date: int, to_date: int):
+async def _crawl_video_all_posts_backdate(job_id: str, from_date, to_date):
     try:
-        print(f"Crawling từ {from_date} đến {to_date}")
+        async with lifespan_mongo():
+            # 1. Upsert processing to pending
+            updated = await VideoService.upsert_processing_to_pending()
+            log.info(f"✅ Đã cập nhật {updated.modified_count} video từ 'processing' → 'pending'")
+            log.info(f"Upsert thành công")
+            await async_delay(1,2)
+            videos = await VideoService.get_videos_backdate(from_date=from_date, to_date=to_date)
+            log.info(f"Số video trong ngày chưa crawl: {len(videos)} từ {from_date} đến {to_date}")
+            chunk_size = constant.CHUNK_SIZE_POST
+            for i in range(0, len(videos), chunk_size):
+                chunk = videos[i:i + chunk_size]
+                video_dicts = [s.model_dump(mode="json") for s in chunk]
+                countdown = random.randint(1, 4)
+
+                # 1. Update status
+                video_ids = [v.video_id for v in chunk]
+                await VideoModel.find(In(VideoModel.video_id, video_ids)).update_many({
+                    "$set": {"status": "processing"}
+                })
+
+                log.info(f"[{job_id}] 🚀 Gửi batch {i//chunk_size + 1}: {len(video_dicts)} video")
+                crawl_video_batch_posts.apply_async(
+                    kwargs={"video_dicts": video_dicts, "job_id": job_id},
+                    queue="tiktok_posts",
+                    countdown=countdown,
+                )
+                # break
     except Exception as e:
-        log.error(e)
+        log.error(f"❌ Lỗi crawl_video_all: {e}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -303,8 +349,6 @@ async def _crawl_batch_async(videos: list[dict], batch_index: int, total_batches
             log.info(f"Đã thêm {len(post_data_unclassified)} video chưa phân loại vào ElasticSearch")
     print(f"📦 Tổng số video đã lấy: {len(data_list_classified) + len(data_list_unclassified)}")
     print(f"✅ Hoàn tất batch {batch_index}/{total_batches}")
-
-
 
 @celery_app.task(
     queue="tiktok_posts",
@@ -370,8 +414,6 @@ def crawl_tiktok_posts_hourly(job_name:str, crawl_type: str):
             log.error(f"❌ Lỗi khi cào dữ liệu: {e}")
             await mongo_connection.disconnect()
     return asyncio.run(do_crawl())
-
-
 
 
 # def _chunk_sources(sources: List, batch_size: int) -> List[List]:

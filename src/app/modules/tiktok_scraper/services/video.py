@@ -162,6 +162,7 @@ class VideoService:
             Eq(VideoModel.status, "processing")
         ).update_many({"$set": {"status": "pending"}})
     
+
     @staticmethod
     async def get_videos_daily():
         vn_now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
@@ -180,5 +181,15 @@ class VideoService:
                 VideoModel.status == "pending",
                 VideoModel.create_time >= from_timestamp,
                 VideoModel.create_time < to_timestamp,
+            )
+        ).to_list()
+    
+    @staticmethod
+    async def get_videos_backdate(from_date: int, to_date: int):
+        return await VideoModel.find(
+            And(
+                VideoModel.status == "pending",
+                VideoModel.create_time >= from_date,
+                VideoModel.create_time < to_date,
             )
         ).to_list()
