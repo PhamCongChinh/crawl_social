@@ -1,6 +1,7 @@
+import asyncio
 import json
 from typing import Dict, List
-from scrapfly import ApiHttpServerError, ScrapeApiResponse, ScrapeConfig
+from scrapfly import ApiHttpServerError, ScrapeApiResponse, ScrapeConfig, ScrapflyScrapeError
 import jmespath
 
 import logging
@@ -31,19 +32,6 @@ def parse_post(response: ScrapeApiResponse) -> Dict:
     )
     return parsed_post_data
 
-# async def scrape_posts(urls: List[str]) -> List[Dict]:
-#     """scrape tiktok posts data from their URLs"""
-#     to_scrape = [ScrapeConfig(
-#         url, 
-#         **BASE_CONFIG,
-#         render_js=True) for url in urls]
-#     data = []
-#     async for response in SCRAPFLY.concurrent_scrape(to_scrape):
-#         post_data = parse_post(response)
-#         data.append(post_data)
-#     log.info(f"scraped {len(data)} posts from post pages")
-#     return data
-
 async def scrape_posts(urls: List[str]) -> List[Dict]:
     """scrape tiktok posts data from their URLs"""
     to_scrape = [ScrapeConfig(
@@ -51,21 +39,8 @@ async def scrape_posts(urls: List[str]) -> List[Dict]:
         **BASE_CONFIG,
         render_js=True) for url in urls]
     data = []
-    try:
-        async for response in SCRAPFLY.concurrent_scrape(to_scrape):
-            try:
-                if not response.content:
-                    log.warning(f"No content from {response.config.url}")
-                    continue
-                post_data = parse_post(response)
-                data.append(post_data)
-            except Exception as e:
-                log.error(f"Error parsing post data: {e}")
-                continue
-    except ApiHttpServerError as e:
-        log.error(f"Scrapfly fatal error: {str(e)}")
-        # bỏ qua, không crash task
-        pass
-
+    async for response in SCRAPFLY.concurrent_scrape(to_scrape):
+        post_data = parse_post(response)
+        data.append(post_data)
     log.info(f"scraped {len(data)} posts from post pages")
     return data

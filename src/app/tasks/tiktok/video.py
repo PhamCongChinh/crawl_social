@@ -66,7 +66,7 @@ def crawl_video_batch_classified(source_dicts: list[dict], job_id: str = None):
 async def _crawl_video_batch_classified(source_dicts: list[dict], job_id: str = None):
     try:
         async with lifespan_mongo():
-            sem = asyncio.Semaphore(constant.CONCURRENCY)  # chỉ chạy 2 video cùng lúc
+            sem = asyncio.Semaphore(constant.CONCURRENCY)  # chỉ chạy n video cùng lúc
             async def crawl_one(source):
                 async with sem:
                     for attempt in range(3):

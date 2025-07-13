@@ -69,10 +69,10 @@ services:
     command: >
       poetry run celery -A app.worker worker --concurrency=3 --loglevel=info -Q tiktok_sources -n tiktok_sources@%h
   
-  worker_tiktok_posts:
+  tiktok_posts:
     build:
       context: .
-    container_name: worker_tiktok_posts
+    container_name: tiktok_posts
     volumes:
       - ./src:/app/src
       - ./pyproject.toml:/app/pyproject.toml
@@ -83,7 +83,7 @@ services:
       - redis_server
       - fastapi_app
     command: >
-      poetry run celery -A app.worker worker --concurrency=3 --loglevel=info -Q tiktok_posts -n tiktok_posts@%h
+      poetry run celery -A app.worker worker --concurrency=1 --loglevel=info -Q tiktok_posts -n tiktok_posts@%h
   
   tiktok_videos:
     build:

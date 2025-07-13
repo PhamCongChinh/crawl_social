@@ -3,7 +3,7 @@ import logging
 from zoneinfo import ZoneInfo
 
 from pymongo import ASCENDING, UpdateOne
-from beanie.operators import In, And
+from beanie.operators import In, And, Eq
 from app.modules.tiktok_scraper.models.video import VideoModel
 from app.utils.timezone import now_vn
 log = logging.getLogger(__name__)
@@ -24,7 +24,6 @@ class VideoService:
         to_timestamp = int(vn_now.timestamp())
         log.info(from_timestamp)
         log.info(to_timestamp)
-        # return await VideoModel.find_all().to_list()
         return await VideoModel.find(
             And(
                 VideoModel.status == "pending",
@@ -122,7 +121,7 @@ class VideoService:
                     "org_id": channel["org_id"],
                     "source_type": channel["source_type"],
                     "source_name": channel["source_name"],
-                    "source_url": f'{channel["source_url"]}/video/{cid}',
+                    "source_url": channel["source_url"],
                     "source_channel": channel["source_channel"],
                     "updated_at": now,
                 }
@@ -155,3 +154,31 @@ class VideoService:
         except Exception as e:
             log.error(e)
 
+
+
+    @staticmethod
+    async def upsert_processing_to_pending():
+        return await VideoModel.find(
+            Eq(VideoModel.status, "processing")
+        ).update_many({"$set": {"status": "pending"}})
+    
+    @staticmethod
+    async def get_videos_daily():
+        vn_now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
+
+        # Lấy thời điểm đầu ngày (0h00)
+        start_of_day = datetime(vn_now.year, vn_now.month, vn_now.day, tzinfo=ZoneInfo("Asia/Ho_Chi_Minh"))
+        
+        from_timestamp = int(start_of_day.timestamp())
+        to_timestamp = int(vn_now.timestamp())
+
+        log.info(f"Giờ hiện tại: {vn_now}")
+        log.info(f"Bắt đầu ngày: {start_of_day}")
+
+        return await VideoModel.find(
+            And(
+                VideoModel.status == "pending",
+                VideoModel.create_time >= from_timestamp,
+                VideoModel.create_time < to_timestamp,
+            )
+        ).to_list()

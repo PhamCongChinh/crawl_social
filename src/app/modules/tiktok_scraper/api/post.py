@@ -14,7 +14,7 @@ from app.modules.tiktok_scraper.services.post import PostService
 import logging
 log = logging.getLogger(__name__)
 from app.tasks.tiktok.dispatcher import dispatch_video_batches
-from app.tasks.tiktok.post import crawl_tiktok_posts, crawl_tiktok_posts_hourly
+from app.tasks.tiktok.post import crawl_tiktok_all_posts, crawl_tiktok_posts, crawl_tiktok_posts_hourly
 from app.utils.delay import async_delay
 
 
@@ -43,7 +43,8 @@ async def crawl_posts():
     try:
         job_name = "tiktok"
         crawl_type = "tiktok"
-        crawl_tiktok_posts_hourly.delay(job_name, crawl_type)
+        # crawl_tiktok_posts_hourly.delay(job_name, crawl_type)
+        crawl_tiktok_all_posts.delay(job_name)
     except Exception as e:
         return {"status": "error", "message": str(e)}
     
