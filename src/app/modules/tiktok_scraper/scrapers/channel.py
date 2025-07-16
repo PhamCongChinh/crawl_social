@@ -74,11 +74,11 @@ async def scrape_channel(url: str) -> List[Dict]:
                     render_js=True,
                     auto_scroll=False,
                     wait_for_selector="//div[@data-e2e='user-post-item-list']",
-                    cache=True,
-                    cache_ttl=86400,
-                    timeout=30000,         # 15s thôi
-                    debug=False,
-                    retry=False,
+                    # cache=True,
+                    # cache_ttl=86400,
+                    # timeout=30000,         # 15s thôi
+                    # debug=False,
+                    # retry=False,
                 ))
                 if response.cost:
                     log.info(f"🟢 [CACHE] {url} → hit cache ✅ (cost: ~0 credits)")

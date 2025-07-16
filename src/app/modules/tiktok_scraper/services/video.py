@@ -57,7 +57,7 @@ class VideoService:
                     "video_url": f"https://www.tiktok.com/@{data.get('author', {}).get('uniqueId', '')}/video/{cid}",
                     "contents": data.get("desc"),#
                     "create_time": data.get("createTime"),#
-                    "org_id": keyword["org_id"],
+                    "org_id": 0,#keyword["org_id"],
                     "source_type": keyword["source_type"],
                     "source_name": data.get("author", {}).get("nickname", ""),
                     "source_url": f"https://www.tiktok.com/@{data.get('author', {}).get('uniqueId', '')}/video/{cid}",
@@ -118,7 +118,7 @@ class VideoService:
                     "video_url": f'{channel["source_url"]}/video/{cid}',
                     "contents": data.get("desc"),
                     "create_time": data.get("createTime"),
-                    "org_id": 0,#channel["org_id"],
+                    "org_id": channel["org_id"],
                     "source_type": channel["source_type"],
                     "source_name": channel["source_name"],
                     "source_url": channel["source_url"],
