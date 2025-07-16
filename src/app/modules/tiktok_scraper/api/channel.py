@@ -7,7 +7,7 @@ import logging
 from app.modules.tiktok_scraper.models.source import SourceModel
 from app.modules.tiktok_scraper.scrapers.channel import scrape_channel
 from app.modules.tiktok_scraper.services.source import SourceService
-from app.tasks.tiktok.channel import crawl_tiktok_channels_classified, crawl_tiktok_channels_unclassified
+# from app.tasks.tiktok.channel import crawl_tiktok_channels_classified, crawl_tiktok_channels_unclassified
 from app.utils.delay import async_delay
 log = logging.getLogger(__name__)
 
@@ -32,14 +32,16 @@ async def get_channels():
 @router.post("/channels/crawl/classified")
 async def crawl_channels_classified():
     try:
-        crawl_tiktok_channels_classified.delay("classified", "tiktok")
+        # crawl_tiktok_channels_classified.delay("classified", "tiktok")
+        pass
     except Exception as e:
         return {"status": "error", "message": str(e)}
     
 @router.post("/channels/crawl/unclassified")
 async def crawl_channels_unclassified():
     try:
-        crawl_tiktok_channels_unclassified.delay("unclassified", "tiktok")
+        # crawl_tiktok_channels_unclassified.delay("unclassified", "tiktok")
+        pass
     except Exception as e:
         return {"status": "error", "message": str(e)}
 

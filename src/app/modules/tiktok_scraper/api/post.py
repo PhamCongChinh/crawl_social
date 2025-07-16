@@ -13,7 +13,7 @@ from app.modules.tiktok_scraper.services.post import PostService
 
 import logging
 log = logging.getLogger(__name__)
-from app.tasks.tiktok.dispatcher import dispatch_video_batches
+# from app.tasks.tiktok.dispatcher import dispatch_video_batches
 from app.tasks.tiktok.post import crawl_tiktok_all_posts, crawl_tiktok_all_posts_backdate, crawl_tiktok_posts, crawl_tiktok_posts_hourly
 from app.utils.delay import async_delay
 
@@ -28,7 +28,7 @@ async def get_posts():
     log.info("Đang lấy dữ liệu post")
     try:
         # data = await PostService.get_posts()
-        dispatch_video_batches.delay()
+        # dispatch_video_batches.delay()
         # crawl_tiktok_posts_hourly.delay()
         log.info("Đã lấy dữ liệu post")
         return None

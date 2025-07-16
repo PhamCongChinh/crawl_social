@@ -152,7 +152,7 @@ async def _crawl_video_batch_unclassified(source_dicts: list[dict], job_id: str 
 
 # Keyword
 @celery_app.task(
-    queue="tiktok_videos",
+    queue="tiktok_keywords",
     name="app.tasks.tiktok.video.crawl_video_all_keyword"
 )
 def crawl_video_all_keyword(job_id: str):
@@ -173,14 +173,14 @@ async def _crawl_video_all_keyword(job_id: str):
                 log.info(f"[{job_id}] 🚀 Gửi batch {i//chunk_size + 1}: {source_dicts}")
                 crawl_video_batch_keyword.apply_async(
                     kwargs={"source_dicts": source_dicts, "job_id": job_id},
-                    queue="tiktok_videos",
+                    queue="tiktok_keywords",
                     countdown=countdown,
                 )
     except Exception as e:
         log.error(f"❌ Lỗi crawl_video_all: {e}")
 
 @celery_app.task(
-    queue="tiktok_videos",
+    queue="tiktok_keywords",
     name="app.tasks.tiktok.video.crawl_video_batch_keyword"
 )
 def crawl_video_batch_keyword(source_dicts: list[dict], job_id: str = None):

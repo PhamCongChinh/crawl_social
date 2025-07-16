@@ -118,7 +118,7 @@ class VideoService:
                     "video_url": f'{channel["source_url"]}/video/{cid}',
                     "contents": data.get("desc"),
                     "create_time": data.get("createTime"),
-                    "org_id": channel["org_id"],
+                    "org_id": 0,#channel["org_id"],
                     "source_type": channel["source_type"],
                     "source_name": channel["source_name"],
                     "source_url": channel["source_url"],

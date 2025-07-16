@@ -3,6 +3,3 @@ from . import post
 from . import comment
 from . import search
 from . import video
-
-from . import worker
-from . import dispatcher

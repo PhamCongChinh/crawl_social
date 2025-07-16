@@ -7,7 +7,7 @@ import logging
 from app.modules.tiktok_scraper.models.source import SourceModel
 from app.modules.tiktok_scraper.scrapers.channel import scrape_channel
 from app.modules.tiktok_scraper.services.source import SourceService
-from app.tasks.tiktok.channel import crawl_tiktok_channels
+# from app.tasks.tiktok.channel import crawl_tiktok_channels
 from app.tasks.tiktok.comment import crawl_tiktok_comments, crawl_tiktok_comments_hourly
 from app.utils.delay import async_delay
 log = logging.getLogger(__name__)

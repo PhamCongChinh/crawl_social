@@ -16,8 +16,7 @@ output.mkdir(exist_ok=True)
 async def crawl_posts():
     try:
         log.info("Welcome to Thread!")
-        url = "https://www.threads.com/@ngoctrinh89?hl=vi"  # example without media
-        # url = "https://www.threads.net/t/C8H5FiCtESk/"  # example with media
+        url = "https://www.threads.com/@domylinh1310"  # example without media
         thread = await scrape_thread(url)
         output.joinpath("thread.json").write_text(json.dumps(thread, indent=2, ensure_ascii=False), encoding="utf-8")
     except Exception as e:

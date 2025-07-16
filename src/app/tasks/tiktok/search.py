@@ -27,49 +27,49 @@ VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
 output = Path(__file__).parent / "results"
 output.mkdir(exist_ok=True)
 
-@celery_app.task(
-    name="app.tasks.tiktok.post.crawl_tiktok_search_hourly",
-)
-def crawl_tiktok_search(job_name: str, crawl_type: str):
-    print(f"Task search {job_name} - {crawl_type}")
-    async def do_crawl():
-        try:
-            await mongo_connection.connect()
-            keywords = await SearchService.get_keywords()
-            if len(keywords) == 0:
-                await mongo_connection.disconnect()
-                return
-            BATCH_SIZE = 2
-            keyword_dicts = [k.model_dump() for k in keywords]
-            batches = [keyword_dicts[i:i + BATCH_SIZE] for i in range(0, len(keyword_dicts), BATCH_SIZE)]
-            log.info(f"📦 Tổng cộng {len(keywords)} từ khóa, chia thành {len(batches)} batch (mỗi batch {BATCH_SIZE} từ khóa)")
-            for i, batch in enumerate(batches, start=1):
-                log.info(f"🚀 Batch {i}/{len(batches)}: {len(batch)} từ khóa")
-                await _crawl_batch_async(batch, i, len(batches))
-                await async_delay(20,30)
-        except Exception as e:
-            log.error(e)
-    return asyncio.run(do_crawl())
+# @celery_app.task(
+#     name="app.tasks.tiktok.post.crawl_tiktok_search_hourly",
+# )
+# def crawl_tiktok_search(job_name: str, crawl_type: str):
+#     print(f"Task search {job_name} - {crawl_type}")
+#     async def do_crawl():
+#         try:
+#             await mongo_connection.connect()
+#             keywords = await SearchService.get_keywords()
+#             if len(keywords) == 0:
+#                 await mongo_connection.disconnect()
+#                 return
+#             BATCH_SIZE = 2
+#             keyword_dicts = [k.model_dump() for k in keywords]
+#             batches = [keyword_dicts[i:i + BATCH_SIZE] for i in range(0, len(keyword_dicts), BATCH_SIZE)]
+#             log.info(f"📦 Tổng cộng {len(keywords)} từ khóa, chia thành {len(batches)} batch (mỗi batch {BATCH_SIZE} từ khóa)")
+#             for i, batch in enumerate(batches, start=1):
+#                 log.info(f"🚀 Batch {i}/{len(batches)}: {len(batch)} từ khóa")
+#                 await _crawl_batch_async(batch, i, len(batches))
+#                 await async_delay(20,30)
+#         except Exception as e:
+#             log.error(e)
+#     return asyncio.run(do_crawl())
 
 
-async def _crawl_batch_async(keywords: list[dict], batch_index: int, total_batches: int):
-    log.info(f"🔧 Bắt đầu xử lý batch {batch_index}/{total_batches} với {len(keywords)} từ khóa")
-    for index, keyword in enumerate(keywords):
-        log.info(f"🕐 [{index + 1}/{len(keywords)}] Từ khóa: {keyword['keyword']}")
-        scrape_data = await scrape_search(keyword=keyword["keyword"], max_search=18)
-        with open(output.joinpath("search.json"), "w", encoding="utf-8") as file:
-            json.dump(scrape_data, file, indent=2, ensure_ascii=False)
-        if not scrape_data:
-            log.warning(f"⚠️ Không lấy được dữ liệu từ {keyword['keyword']}")
-            return
-        # print(scrape_data)
-        print(keyword)
-        result = await VideoService.upsert_channels_bulk_keyword(scrape_data, keyword)
-        # result = await ChannelService.upsert_channels_bulk_keyword(scrape_data, keyword)
-        # log.info(
-        #     f"✅ Upsert xong: matched={result.matched_count}, "
-        #     f"inserted={result.upserted_count}, modified={result.modified_count}"
-        # )
+# async def _crawl_batch_async(keywords: list[dict], batch_index: int, total_batches: int):
+#     log.info(f"🔧 Bắt đầu xử lý batch {batch_index}/{total_batches} với {len(keywords)} từ khóa")
+#     for index, keyword in enumerate(keywords):
+#         log.info(f"🕐 [{index + 1}/{len(keywords)}] Từ khóa: {keyword['keyword']}")
+#         scrape_data = await scrape_search(keyword=keyword["keyword"], max_search=18)
+#         with open(output.joinpath("search.json"), "w", encoding="utf-8") as file:
+#             json.dump(scrape_data, file, indent=2, ensure_ascii=False)
+#         if not scrape_data:
+#             log.warning(f"⚠️ Không lấy được dữ liệu từ {keyword['keyword']}")
+#             return
+#         # print(scrape_data)
+#         print(keyword)
+#         result = await VideoService.upsert_channels_bulk_keyword(scrape_data, keyword)
+#         # result = await ChannelService.upsert_channels_bulk_keyword(scrape_data, keyword)
+#         # log.info(
+#         #     f"✅ Upsert xong: matched={result.matched_count}, "
+#         #     f"inserted={result.upserted_count}, modified={result.modified_count}"
+#         # )
 
 
 

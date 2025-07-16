@@ -35,40 +35,6 @@ services:
     command: >
       poetry run celery -A app.worker worker --concurrency=1 --loglevel=info
 
-  # Worker xử lý task hằng giờ (ví dụ: từ Celery Beat hoặc APScheduler)
-
-  # worker_priority_sources:
-  #   build:
-  #     context: .
-  #   container_name: worker_priority_sources
-  #   volumes:
-  #     - ./src:/app/src
-  #     - ./pyproject.toml:/app/pyproject.toml
-  #     - ./poetry.lock:/app/poetry.lock
-  #   env_file:
-  #     - .env
-  #   depends_on:
-  #     - redis_server
-  #     - fastapi_app
-  #   command: >
-  #     poetry run celery -A app.worker worker --concurrency=3 --loglevel=info -Q priority_sources -n priority_sources@%h
-
-  worker_tiktok_sources:
-    build:
-      context: .
-    container_name: worker_tiktok_sources
-    volumes:
-      - ./src:/app/src
-      - ./pyproject.toml:/app/pyproject.toml
-      - ./poetry.lock:/app/poetry.lock
-    env_file:
-      - .env
-    depends_on:
-      - redis_server
-      - fastapi_app
-    command: >
-      poetry run celery -A app.worker worker --concurrency=3 --loglevel=info -Q tiktok_sources -n tiktok_sources@%h
-  
   tiktok_posts:
     build:
       context: .
@@ -83,7 +49,7 @@ services:
       - redis_server
       - fastapi_app
     command: >
-      poetry run celery -A app.worker worker --concurrency=2 --loglevel=info -Q tiktok_posts -n tiktok_posts@%h
+      poetry run celery -A app.worker worker --concurrency=1 --loglevel=info -Q tiktok_posts -n tiktok_posts@%h
   
   tiktok_videos:
     build:
@@ -99,8 +65,23 @@ services:
       - redis_server
       - fastapi_app
     command: >
-      poetry run celery -A app.worker worker --concurrency=3 --loglevel=info -Q tiktok_videos -n tiktok_videos@%h
+      poetry run celery -A app.worker worker --concurrency=1 --loglevel=info -Q tiktok_videos -n tiktok_videos@%h
   
+  tiktok_keywords:
+    build:
+      context: .
+    container_name: tiktok_keywords
+    volumes:
+      - ./src:/app/src
+      - ./pyproject.toml:/app/pyproject.toml
+      - ./poetry.lock:/app/poetry.lock
+    env_file:
+      - .env
+    depends_on:
+      - redis_server
+      - fastapi_app
+    command: >
+      poetry run celery -A app.worker worker --concurrency=1 --loglevel=info -Q tiktok_keywords -n tiktok_keywords@%h
 
 
   # worker_tiktok_comments:
@@ -120,24 +101,6 @@ services:
   #     poetry run celery -A app.worker worker --concurrency=3 --loglevel=info -Q tiktok_comments -n tiktok_comments@%h
 
 
-
-
-  # worker_thread:
-  #   build:
-  #     context: .
-  #   container_name: worker_thread
-  #   volumes:
-  #     - ./src:/app/src
-  #     - ./pyproject.toml:/app/pyproject.toml
-  #     - ./poetry.lock:/app/poetry.lock
-  #   env_file:
-  #     - .env
-  #   depends_on:
-  #     - redis_server
-  #     - fastapi_app
-  #   command: >
-  #     poetry run celery -A app.worker worker --concurrency=1 --loglevel=info -Q thread_platform -n thread@%h
-  
   # # Lập lịch
   # celery_beat:
   #   build:
