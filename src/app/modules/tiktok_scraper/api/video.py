@@ -24,15 +24,15 @@ async def get_videos():
     
 @router.post("/videos/crawl/classified")
 async def crawl_videos_classified():
-    crawl_video_all_classified.delay(job_id="request.job_id")
+    crawl_video_all_classified.delay(job_id="classified")
     return {"message": f"Đã trigger job {'request.job_id'}"}
 
 @router.post("/videos/crawl/unclassified")
 async def crawl_videos_unclassified():
-    crawl_video_all_unclassified.delay(job_id="request.job_id")
+    crawl_video_all_unclassified.delay(job_id="unclassified")
     return {"message": f"Đã trigger job {'request.job_id'}"}
 
 @router.post("/videos/crawl/keyword")
 async def crawl_videos_keyword():
-    crawl_video_all_keyword.delay(job_id="request.job_id")
+    crawl_video_all_keyword.delay(job_id="keywords")
     return {"message": f"Đã trigger job {'request.job_id'}"}
