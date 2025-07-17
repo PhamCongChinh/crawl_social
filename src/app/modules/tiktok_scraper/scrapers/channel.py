@@ -1,5 +1,6 @@
 import asyncio
 import json
+import re
 from typing import Dict, List
 from scrapfly import ScrapeApiResponse, ScrapeConfig
 import jmespath
@@ -69,16 +70,13 @@ async def scrape_channel(url: str) -> List[Dict]:
         for attempt in range(max_attempts):
             try:
                 response = await SCRAPFLY.async_scrape(ScrapeConfig(
-                    url=url,
+                    url,
                     asp=True,
-                    render_js=True,
-                    auto_scroll=False,
                     wait_for_selector="//div[@data-e2e='user-post-item-list']",
-                    # cache=True,
-                    # cache_ttl=86400,
-                    # timeout=30000,         # 15s thôi
-                    # debug=False,
-                    # retry=False,
+                    render_js=True,
+                    rendering_wait=3000,
+                    cost_budget=30,
+                    session="channel_" + normalize_session_name(url),
                 ))
                 if response.cost:
                     log.info(f"🟢 [CACHE] {url} → hit cache ✅ (cost: ~0 credits)")
@@ -93,5 +91,10 @@ async def scrape_channel(url: str) -> List[Dict]:
                     await asyncio.sleep(2 + attempt)
                 else:
                     raise
-        
+
+def normalize_session_name(raw: str) -> str:
+    """Chuyển session về đúng định dạng alphanumeric, dash, underscore"""
+    name = raw.lower()
+    name = re.sub(r"[^a-z0-9\-_]", "_", name)  # thay ký tự lạ bằng _
+    return name[:255]  # giới hạn độ dài
     
