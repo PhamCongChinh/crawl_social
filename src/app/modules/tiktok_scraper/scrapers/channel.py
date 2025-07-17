@@ -76,12 +76,9 @@ async def scrape_channel(url: str) -> List[Dict]:
                     render_js=True,
                     rendering_wait=3000,
                     cost_budget=30,
-                    session="channel_" + normalize_session_name(url),
+                    rendering_stage="domcontentloaded"
                 ))
-                if response.cost:
-                    log.info(f"🟢 [CACHE] {url} → hit cache ✅ (cost: ~0 credits)")
-                else:
-                    log.info(f"🔵 [LIVE]  {url} → live scrape ⚠️ (cost: ~150–250 credits)")
+                log.info(f"✅ URL: {url} | Cost: {response.cost} | Status: {response.status_code}")
                 data = parse_channel(response)
                 log.info(f"Đã quét được {len(data)} bài viết từ kênh {url}")
                 return data
@@ -91,10 +88,4 @@ async def scrape_channel(url: str) -> List[Dict]:
                     await asyncio.sleep(2 + attempt)
                 else:
                     raise
-
-def normalize_session_name(raw: str) -> str:
-    """Chuyển session về đúng định dạng alphanumeric, dash, underscore"""
-    name = raw.lower()
-    name = re.sub(r"[^a-z0-9\-_]", "_", name)  # thay ký tự lạ bằng _
-    return name[:255]  # giới hạn độ dài
     
