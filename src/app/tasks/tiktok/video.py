@@ -72,29 +72,22 @@ async def _crawl_video_batch_classified(source_dicts: list[dict], job_id: str = 
             sem = asyncio.Semaphore(constant.CONCURRENCY)  # chỉ chạy n video cùng lúc
             async def crawl_one(source):
                 async with sem:
-                    for attempt in range(3):
-                        try:
-                            log.info(f"---------------------------------------------------------------------")
-                            log.info(f"[{job_id}] ({attempt+1}/3) Đang cào: {source['source_url']}")
-                            data = await scrape_channel(source['source_url'])
-                            await save_to_mongo(data=data, source=source)
-                            log.info(f"[{job_id}] Cào xong: {source['source_name']} ({len(data)} bài viết)")
-                            return {
-                                "url": source['source_url'],
-                                "source_name": source['source_name'],
-                                "ok": True,
-                                "data_len": len(data)
-                            }
-                        except Exception as e:
-                            log.warning(f"[{job_id}] Lỗi: {source['source_url']} | Thử {attempt+1} → {e}")
-                            if attempt == 2:
-                                return {
-                                    "url": source['source_url'],
-                                    "source_name": source['source_name'],
-                                    "ok": False,
-                                    "error": str(e)
-                                }
-                            await asyncio.sleep(2 + attempt)
+                    try:
+                        log.info(f"---------------------------------------------------------------------")
+                        log.info(f"[{job_id}] Đang cào: {source['source_url']}")
+                        data = await scrape_channel(source['source_url'])
+                        await save_to_mongo(data=data, source=source)
+                        log.info(f"[{job_id}] Cào xong: {source['source_name']} ({len(data)} bài viết)")
+                        return {
+                            "url": source['source_url'],
+                            "source_name": source['source_name'],
+                            "ok": True,
+                            "data_len": len(data)
+                        }
+                    except Exception as e:
+                        log.warning(f"[{job_id}] Lỗi: {source['source_url']} → {e}")
+                        raise
+                        
             log.info(f"[{job_id}] Bắt đầu cào batch {len(source_dicts)} nguồn...")
             results = await asyncio.gather(*[crawl_one(source) for source in source_dicts])
 
@@ -162,29 +155,22 @@ async def _crawl_video_batch_unclassified(source_dicts: list[dict], job_id: str 
             sem = asyncio.Semaphore(constant.CONCURRENCY)  # chỉ chạy 2 video cùng lúc
             async def crawl_one(source):
                 async with sem:
-                    for attempt in range(3):
-                        try:
-                            log.info(f"---------------------------------------------------------------------")
-                            log.info(f"[{job_id}] ({attempt+1}/3) Đang cào: {source['source_url']}")
-                            data = await scrape_channel(source['source_url'])
-                            await save_to_mongo(data=data, source=source)
-                            log.info(f"[{job_id}] Cào xong: {source['source_name']} ({len(data)} bài viết)")
-                            return {
-                                "url": source['source_url'],
-                                "source_name": source['source_name'],
-                                "ok": True,
-                                "data_len": len(data)
-                            }
-                        except Exception as e:
-                            log.warning(f"[{job_id}] ❌ Failed: {source['source_url']} | attempt {attempt+1} → {e}")
-                            if attempt == 2:
-                                return {
-                                    "url": source['source_url'],
-                                    "source_name": source['source_name'],
-                                    "ok": False,
-                                    "error": str(e)
-                                }
-                            await asyncio.sleep(2 + attempt)
+                    try:
+                        log.info(f"---------------------------------------------------------------------")
+                        log.info(f"[{job_id}] Đang cào: {source['source_url']}")
+                        data = await scrape_channel(source['source_url'])
+                        await save_to_mongo(data=data, source=source)
+                        log.info(f"[{job_id}] Cào xong: {source['source_name']} ({len(data)} bài viết)")
+                        return {
+                            "url": source['source_url'],
+                            "source_name": source['source_name'],
+                            "ok": True,
+                            "data_len": len(data)
+                        }
+                    except Exception as e:
+                        log.warning(f"[{job_id}] ❌ Failed: {source['source_url']} → {e}")
+                        raise
+                        
             log.info(f"[{job_id}] Bắt đầu cào batch {len(source_dicts)} nguồn...")
             results = await asyncio.gather(*[crawl_one(source) for source in source_dicts])
             # Tổng kết kết quả

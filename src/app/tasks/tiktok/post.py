@@ -90,17 +90,20 @@ async def _crawl_video_batch_posts(video_dicts: list[dict], job_id: str = None):
             # Crawl & post classified
             if data_list_classified:
                 post_data_classified = await crawl_tiktok_post_list_direct_classified(data_list_classified)
-                print(f"post_data: {post_data_classified}")
+                log.info(post_data_classified)
                 if post_data_classified:
-                    await postToES(post_data_classified)
-                    log.info(f"Đã thêm {len(post_data_classified)} video đã phân loại vào ElasticSearch")
+                    log.info(f"Đã thêm {len(post_data_classified)} video đã PHÂN LOẠI vào ElasticSearch")
+                    result_classified = await postToES(post_data_classified)
+                    check_post_result(result_classified)
+
             # Crawl & post unclassified
             if data_list_unclassified:
                 post_data_unclassified = await crawl_tiktok_post_list_direct_unclassified(data_list_unclassified)
-                print(f"post_data: {post_data_unclassified}")
                 if post_data_unclassified:
-                    await postToESUnclassified(post_data_unclassified)
-                    log.info(f"Đã thêm {len(post_data_unclassified)} video chưa phân loại vào ElasticSearch")
+                    log.info(f"Đã thêm {len(post_data_unclassified)} video CHƯA PHÂN LOẠI vào ElasticSearch")
+                    result_unclassified = await postToESUnclassified(post_data_unclassified)
+                    check_post_result(result_unclassified)
+                    
             print(f"📦 Tổng số video đã lấy: {len(data_list_classified) + len(data_list_unclassified)}")
     except Exception as e:
         log.error(f"❌ Lỗi crawl_video_all: {e}")
@@ -264,6 +267,27 @@ async def _crawl_video_all_posts_backdate(job_id: str, from_date, to_date):
                 # break
     except Exception as e:
         log.error(f"❌ Lỗi crawl_video_all: {e}")
+
+
+def check_post_result(response_data: dict):
+    status_code = response_data.get("statusCode")
+    is_success = response_data.get("isSuccess", False)
+    errors = response_data.get("data", {}).get("errors", [])
+    successes = response_data.get("data", {}).get("successes", [])
+
+    if status_code != 200:
+        log.error(f"❌ HTTP Status Code lỗi: {status_code}")
+    elif not is_success:
+        log.error("❌ API trả về isSuccess=False")
+    elif errors:
+        log.error(f"❌ Có lỗi trong response: {errors}")
+    else:
+        log.info(f"✅ POST thành công {len(successes)} bài post")
+        for item in successes:
+            url = item.get("url")
+            views = item.get("views")
+            reactions = item.get("reactions")
+            log.info(f"🎯 Post: {url} | 👀 Views: {views} | ❤️ Reactions: {reactions}")
 
 
 

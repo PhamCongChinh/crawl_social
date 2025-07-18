@@ -42,36 +42,32 @@ def parse_channel(response: ScrapeApiResponse):
 
 async def scrape_channel(url: str) -> List[Dict]:
     """scrape video data from a channel (profile with videos)"""
-    # js code for scrolling down with maximum 15 scrolls. It stops at the end without using the full iterations
-    js = """const scrollToEnd = (i = 0) => (window.innerHeight + window.scrollY >= document.body.scrollHeight || i >= 15) ? (console.log("Reached the bottom or maximum iterations. Stopping further iterations."), setTimeout(() => console.log("Waited 10 seconds after all iterations."), 10000)) : (window.scrollTo(0, document.body.scrollHeight), setTimeout(() => scrollToEnd(i + 1), 5000)); scrollToEnd();"""
+    # js = """const scrollToEnd = (i = 0) => (window.innerHeight + window.scrollY >= document.body.scrollHeight || i >= 15) ? (console.log("Reached the bottom or maximum iterations. Stopping further iterations."), setTimeout(() => console.log("Waited 10 seconds after all iterations."), 10000)) : (window.scrollTo(0, document.body.scrollHeight), setTimeout(() => scrollToEnd(i + 1), 5000)); scrollToEnd();"""
     log.info(f"[Scraper Video] Đang thu thập dữ liệu từ {url}.")
-    max_attempts = 3
-    for attempt in range(max_attempts):
-        for attempt in range(max_attempts):
-            try:
-                response = await SCRAPFLY.async_scrape(ScrapeConfig(
-                    url,
-                    asp=True,
-                    proxy_pool="public_datacenter_pool",
-                    wait_for_selector="//div[@data-e2e='user-post-item-list']",
-                    render_js=True,
-                    rendering_wait=3000,
-                    cost_budget=10,
-                    retry=False,
-                    timeout=30000,
-                    rendering_stage="domcontentloaded"
-                ))
-                if response.cost > 6:
-                    log.info(f"[Scraper  Cost] ❌ Cost: {response.cost} | Status: {response.status_code} | URL: {url}")
-                else:
-                    log.info(f"[Scraper  Cost] Cost: {response.cost} | Status: {response.status_code} | URL: {url}")
-                data = parse_channel(response)
-                log.info(f"[Scraper Video] Đã quét được {len(data)} bài viết từ kênh {url}")
-                return data
-            except Exception as e:
-                if attempt < max_attempts - 1:
-                    log.warning(f"[Scraper Video] Thử lại {attempt+1}/{max_attempts} → {url} vì {e}")
-                    await asyncio.sleep(2 + attempt)
-                else:
-                    raise
+    try:
+        response = await SCRAPFLY.async_scrape(ScrapeConfig(
+            url,
+            asp=False,
+            proxy_pool="public_datacenter_pool",
+            wait_for_selector="//div[@data-e2e='user-post-item-list']",
+            render_js=True,
+            rendering_wait=3000,
+            cost_budget=10,
+            retry=False,
+            timeout=30000,
+            rendering_stage="domcontentloaded"
+        ))
+
+        if response.cost > 6:
+            log.info(f"[Scraper Cost] ❌ Cost: {response.cost} | Status: {response.status_code} | URL: {url}")
+        else:
+            log.info(f"[Scraper Cost] ✅ Cost: {response.cost} | Status: {response.status_code} | URL: {url}")
+
+        data = parse_channel(response)
+        log.info(f"[Scraper Video] 🧹 Đã quét được {len(data)} bài viết từ kênh {url}")
+        return data
+
+    except Exception as e:
+        log.error(f"[Scraper Video] ❌ Lỗi khi quét {url} → {e}")
+        raise
     
