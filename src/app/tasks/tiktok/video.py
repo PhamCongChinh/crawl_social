@@ -236,20 +236,15 @@ async def _crawl_video_batch_keyword(source_dicts: list[dict], job_id: str = Non
             sem = asyncio.Semaphore(constant.CONCURRENCY)  # chỉ chạy 2 video cùng lúc
             async def crawl_one(source):
                 async with sem:
-                    for attempt in range(3):
-                        try:
-                            log.info(f"[{job_id}] 🔍 Crawling: {source['keyword']} | attempt {attempt+1}")
-                            data = await scrape_search(source['keyword'], max_search=12)
-                            log.info(f"[{job_id}] ✅ Done: {source['keyword']} ({len(data)} items)")
-                            await save_to_mongo_keyword(data=data, source=source)
-                            return {"Keyword": source['keyword'], "ok": True, "data_len": len(data)}
-                        except Exception as e:
-                            log.warning(f"[{job_id}] ❌ Failed: {source['keyword']} | attempt {attempt+1} → {e}")
-                            if attempt == 2:
-                                return {"url": source['keyword'], "ok": False, "error": str(e)}
-                            await asyncio.sleep(2 + attempt)
-                    log.info(f"[{job_id}] ✅ Done: {source['keyword']} ({len(data)} items)")
-                    return {"Keyword": source['keyword'], "ok": True}
+                    try:
+                        log.info(f"[{job_id}] 🔍 Crawling: {source['keyword']}")
+                        data = await scrape_search(source['keyword'], max_search=12)
+                        log.info(f"[{job_id}] ✅ Done: {source['keyword']} ({len(data)} items)")
+                        await save_to_mongo_keyword(data=data, source=source)
+                        return {"Keyword": source['keyword'], "ok": True, "data_len": len(data)}
+                    except Exception as e:
+                        log.warning(f"[{job_id}] ❌ Failed: {source['keyword']} → {e}")
+                        return {"url": source['keyword'], "ok": False, "error": str(e)}
             results = await asyncio.gather(*[crawl_one(source) for source in source_dicts])
             log.info(f"[{job_id}] 🧾 Batch done: {results}")
     except Exception as e:
