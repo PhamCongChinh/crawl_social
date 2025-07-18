@@ -72,10 +72,13 @@ async def scrape_channel(url: str) -> List[Dict]:
                 response = await SCRAPFLY.async_scrape(ScrapeConfig(
                     url,
                     asp=True,
+                    proxy_pool="public_datacenter_pool",
                     wait_for_selector="//div[@data-e2e='user-post-item-list']",
                     render_js=True,
                     rendering_wait=3000,
-                    cost_budget=30,
+                    cost_budget=10,
+                    retry=False,
+                    timeout=30000,
                     rendering_stage="domcontentloaded"
                 ))
                 log.info(f"✅ URL: {url} | Cost: {response.cost} | Status: {response.status_code}")
