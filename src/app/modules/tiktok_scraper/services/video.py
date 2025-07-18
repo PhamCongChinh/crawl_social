@@ -144,9 +144,8 @@ class VideoService:
                 log.info("Không có operation nào được tạo cho bulk upsert.")
                 return
             result = await VideoModel.get_motor_collection().bulk_write(operations)
-            print(result)
-            # log.info(f"Bulk upsert xong: inserted={result.upserted_count}, modified={result.modified_count}")
             return {
+                "inserted": result.upserted_count,
                 "matched": result.matched_count,
                 "modified": result.modified_count,
                 "upserted": len(result.upserted_ids)

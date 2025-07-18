@@ -44,27 +44,7 @@ async def scrape_channel(url: str) -> List[Dict]:
     """scrape video data from a channel (profile with videos)"""
     # js code for scrolling down with maximum 15 scrolls. It stops at the end without using the full iterations
     js = """const scrollToEnd = (i = 0) => (window.innerHeight + window.scrollY >= document.body.scrollHeight || i >= 15) ? (console.log("Reached the bottom or maximum iterations. Stopping further iterations."), setTimeout(() => console.log("Waited 10 seconds after all iterations."), 10000)) : (window.scrollTo(0, document.body.scrollHeight), setTimeout(() => scrollToEnd(i + 1), 5000)); scrollToEnd();"""
-    log.info(f"Đang thu thập dữ liệu từ {url} để lấy dữ liệu bài viết.")
-    # response = await SCRAPFLY.async_scrape(
-    #     ScrapeConfig(
-    #         url,
-    #         asp=True,
-    #         # country="AU",
-    #         wait_for_selector="//div[@data-e2e='user-post-item-list']",
-    #         render_js=True,
-    #         auto_scroll=True,
-    #         rendering_wait=3000,
-    #         # js=js,
-    #         retry=False,
-    #         cache=True,
-    #         cache_ttl=86000,
-    #         timeout=15,
-    #         debug=False,
-    #     )
-    # )
-    # data = parse_channel(response)
-    # log.info(f"Đã quét được {len(data)} bài viết từ kênh {url}")
-    # return data
+    log.info(f"[Scraper Video] Đang thu thập dữ liệu từ {url}.")
     max_attempts = 3
     for attempt in range(max_attempts):
         for attempt in range(max_attempts):
@@ -81,13 +61,16 @@ async def scrape_channel(url: str) -> List[Dict]:
                     timeout=30000,
                     rendering_stage="domcontentloaded"
                 ))
-                log.info(f"✅ URL: {url} | Cost: {response.cost} | Status: {response.status_code}")
+                if response.cost > 6:
+                    log.info(f"[Scraper  Cost] ❌ Cost: {response.cost} | Status: {response.status_code} | URL: {url}")
+                else:
+                    log.info(f"[Scraper  Cost] Cost: {response.cost} | Status: {response.status_code} | URL: {url}")
                 data = parse_channel(response)
-                log.info(f"Đã quét được {len(data)} bài viết từ kênh {url}")
+                log.info(f"[Scraper Video] Đã quét được {len(data)} bài viết từ kênh {url}")
                 return data
             except Exception as e:
                 if attempt < max_attempts - 1:
-                    log.warning(f"Retry {attempt+1}/{max_attempts} → {url} vì {e}")
+                    log.warning(f"[Scraper Video] Thử lại {attempt+1}/{max_attempts} → {url} vì {e}")
                     await asyncio.sleep(2 + attempt)
                 else:
                     raise
