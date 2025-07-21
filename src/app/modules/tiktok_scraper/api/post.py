@@ -6,15 +6,15 @@ from zoneinfo import ZoneInfo
 from bson import Int64
 from fastapi import APIRouter
 
-from app.modules.tiktok_scraper.models.channel import ChannelModel
+# from app.modules.tiktok_scraper.models.channel import ChannelModel
 from app.modules.tiktok_scraper.scrapers.post import scrape_posts
-from app.modules.tiktok_scraper.services.channel import ChannelService
+# from app.modules.tiktok_scraper.services.channel import ChannelService
 from app.modules.tiktok_scraper.services.post import PostService
 
 import logging
 log = logging.getLogger(__name__)
 # from app.tasks.tiktok.dispatcher import dispatch_video_batches
-from app.tasks.tiktok.post import crawl_tiktok_all_posts, crawl_tiktok_all_posts_backdate, crawl_tiktok_posts, crawl_tiktok_posts_hourly
+from app.tasks.tiktok.post import crawl_tiktok_all_posts, crawl_tiktok_all_posts_backdate
 from app.utils.delay import async_delay
 
 
@@ -36,10 +36,14 @@ async def get_posts():
         log.error(f"Lỗi khi lấy dữ liệu post: {e}")
         return {"status": "error", "message": str(e)}
 
+
+
+
+
 @router.get("/posts/crawl")
 async def crawl_posts():
     try:
-        job_name = "tiktok"
+        job_name = "tiktok_post"
         crawl_type = "tiktok"
         crawl_tiktok_all_posts.delay(job_name)
     except Exception as e:
@@ -50,7 +54,6 @@ async def crawl_posts():
 async def crawl_posts_backdate(request: CrawlPostBackdateRequest):
     try:
         log.info(f"Đang lấy dữ liệu post: {request}")
-        # dispatch_video_batches.delay()
         job_id = "crawl_post"
         crawl_tiktok_all_posts_backdate.delay(job_id, request.from_date, request.to_date)
         return {"message": "Crawl started", "request": request}

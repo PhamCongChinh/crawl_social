@@ -1,9 +1,7 @@
 from typing import Optional
 from beanie import Document
 from datetime import datetime
-
 from pydantic import Field
-
 from app.utils.timezone import now_vn
 
 class VideoModel(Document):
@@ -25,6 +23,6 @@ class VideoModel(Document):
     class Settings:
         name = "tiktok_videos"
         # Tạo index unique trên channel_id
-        # indexes = [
-        #     "channel_id",  # tự động non-unique nếu muốn, thêm unique bên dưới
-        # ]
+        indexes = [
+            "video_url",  # tự động non-unique nếu muốn, thêm unique bên dưới
+        ]

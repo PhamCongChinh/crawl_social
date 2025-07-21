@@ -1,8 +1,5 @@
 import asyncio
-from sqlalchemy import text
 from app.config.settings import settings
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker, AsyncEngine
-from sqlalchemy.orm import sessionmaker, declarative_base
 
 import asyncpg
 
@@ -18,7 +15,7 @@ class PostgresDB:
         for attempt in range(1, retries + 1):
             try:
                 self.pool = await asyncpg.create_pool(dsn=self.dsn)
-                log.info("PostgreSQL pool đã kết nối thành công")
+                log.info("[Database] PostgreSQL pool đã kết nối thành công")
                 return
             except Exception as e:
                 log.error(f"Số lần thử kết nối {attempt} thất bại: {e}")

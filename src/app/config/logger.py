@@ -55,36 +55,8 @@ def setup_logging():
                 "()": VietnameseColorFormatter,
                 "format": "[%(asctime)s] [%(levelname)s] [%(name)s]: %(message)s",
                 "datefmt": "%Y-%m-%d %H:%M:%S"
-            }
+            },
         },
-
-        # "handlers": {
-        #     "console": {
-        #         "class": "logging.StreamHandler",
-        #         "formatter": "default",
-        #         "level": "INFO"
-        #     },
-        #     "file_info": {
-        #         "class": "logging.handlers.TimedRotatingFileHandler",
-        #         "filename": "logs/app.log",
-        #         "when": "midnight",
-        #         "interval": 1,
-        #         "backupCount": 7,
-        #         "formatter": "default",
-        #         "encoding": "utf-8",
-        #         "level": "INFO"
-        #     },
-        #     "file_error": {
-        #         "class": "logging.handlers.TimedRotatingFileHandler",
-        #         "filename": "logs/error.log",
-        #         "when": "midnight",
-        #         "interval": 1,
-        #         "backupCount": 7,
-        #         "formatter": "default",
-        #         "encoding": "utf-8",
-        #         "level": "ERROR"
-        #     }
-        # },
         "handlers": {
             "console": {
                 "class": "logging.StreamHandler",

@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 
 from app.requests import CreateKeywordRequest
 
-from app.modules.tiktok_scraper.services.channel import ChannelService
+# from app.modules.tiktok_scraper.services.channel import ChannelService
 
 from app.modules.tiktok_scraper.scrapers.comment import scrape_comments
 

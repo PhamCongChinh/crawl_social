@@ -4,33 +4,16 @@ from zoneinfo import ZoneInfo
 
 from pymongo import ASCENDING, UpdateOne
 from beanie.operators import In, And, Eq
+from app.modules.tiktok_scraper.dto.videos import VideoResponse
 from app.modules.tiktok_scraper.models.video import VideoModel
 from app.utils.timezone import now_vn
 log = logging.getLogger(__name__)
 class VideoService:
 
-    # @staticmethod
-    # async def ensure_indexes():
-    #     # Tạo index unique trên channel_id nếu chưa có
-    #     coll = ChannelModelTest.get_motor_collection()
-    #     await coll.create_index([("channel_id", ASCENDING)], unique=True)
-
     @staticmethod
-    async def get_videos():
-        vn_now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
-        hour_ago = vn_now - timedelta(hours=15)
-
-        from_timestamp = int(hour_ago.timestamp())
-        to_timestamp = int(vn_now.timestamp())
-        log.info(from_timestamp)
-        log.info(to_timestamp)
-        return await VideoModel.find(
-            And(
-                VideoModel.status == "pending",
-                VideoModel.create_time >= from_timestamp,
-                VideoModel.create_time < to_timestamp,
-            )
-        ).to_list()
+    async def get_videos() -> list[VideoModel]:
+        videos = await VideoModel.find_all().limit(20).to_list()
+        return videos
 
     @staticmethod
     async def upsert_channels_bulk_keyword(scrape_data: list[dict], keyword: dict):

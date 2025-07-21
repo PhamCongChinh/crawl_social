@@ -1,4 +1,6 @@
 import asyncio
+import json
+from pathlib import Path
 import random
 from typing import List
 from app.core.lifespan_mongo import lifespan_mongo
@@ -15,6 +17,18 @@ from asgiref.sync import async_to_sync
 import logging
 log = logging.getLogger(__name__)
 
+# output = Path(__file__).parent / "results"
+# output.mkdir(exist_ok=True)
+
+error_keywords = []
+output = Path("logs")
+output.mkdir(parents=True, exist_ok=True)
+error_log_file = output / "keyword_error.json"
+
+# output = Path("logs")
+# output.mkdir(parents=True, exist_ok=True)
+# error_log_file = output / "keyword_error.json"
+
 
 async def save_to_mongo(data: List[dict], source: dict):
     try:
@@ -29,6 +43,7 @@ async def save_to_mongo_keyword(data: List[dict], source: dict):
         await VideoService.upsert_channels_bulk_keyword(data, source)
     except Exception as e:
         log.error(f"[ERROR] Lỗi upsert video: {e}")
+        
 # Classified
 @celery_app.task(
     queue="tiktok_videos",
@@ -41,7 +56,7 @@ async def _crawl_video_all_classified(job_id: str):
     try:
         async with lifespan_mongo():
             sources = await SourceService.get_sources_classified() # Lấy url ưu tiên
-            log.info(f"[Classified]📦 Tổng số url: {len(sources)}")
+            log.info(f"[Classified] Tổng số url: {len(sources)}")
 
             chunk_size = constant.CHUNK_SIZE
             for i in range(0, len(sources), chunk_size):
@@ -125,15 +140,16 @@ async def _crawl_video_all_unclassified(job_id: str):
     try:
         async with lifespan_mongo():
             sources = await SourceService.get_sources_unclassified() # Lấy url ưu tiên
-            log.info(f"Tổng số url: {len(sources)}")
+            log.info(f"[Unclassified] Tổng số url: {len(sources)}")
 
             chunk_size = constant.CHUNK_SIZE
             for i in range(0, len(sources), chunk_size):
                 chunk = sources[i:i + chunk_size]
                 source_dicts = [s.model_dump(mode="json") for s in chunk]
+                source_names = [s.source_name for s in chunk]
                 countdown = random.randint(1, 4)
 
-                log.info(f"[{job_id}] Gửi batch {i//chunk_size + 1}: {source_dicts}")
+                log.info(f"[{job_id}] Gửi batch {i//chunk_size + 1}: {source_names}")
                 crawl_video_batch_unclassified.apply_async(
                     kwargs={"source_dicts": source_dicts, "job_id": job_id},
                     queue="tiktok_videos",
@@ -152,7 +168,7 @@ def crawl_video_batch_unclassified(source_dicts: list[dict], job_id: str = None)
 async def _crawl_video_batch_unclassified(source_dicts: list[dict], job_id: str = None):
     try:
         async with lifespan_mongo():
-            sem = asyncio.Semaphore(constant.CONCURRENCY)  # chỉ chạy 2 video cùng lúc
+            sem = asyncio.Semaphore(constant.CONCURRENCY)  # chỉ chạy n video cùng lúc
             async def crawl_one(source):
                 async with sem:
                     try:
@@ -168,7 +184,7 @@ async def _crawl_video_batch_unclassified(source_dicts: list[dict], job_id: str 
                             "data_len": len(data)
                         }
                     except Exception as e:
-                        log.warning(f"[{job_id}] ❌ Failed: {source['source_url']} → {e}")
+                        log.warning(f"[{job_id}] Lỗi: {source['source_url']} → {e}")
                         raise
                         
             log.info(f"[{job_id}] Bắt đầu cào batch {len(source_dicts)} nguồn...")
@@ -192,7 +208,7 @@ async def _crawl_video_batch_unclassified(source_dicts: list[dict], job_id: str 
                 "results": results
             }
     except Exception as e:
-        log.error(f"❌ Lỗi crawl_video_all: {e}")
+        log.error(f"Lỗi crawl_video_all: {e}")
 
 # Keyword
 @celery_app.task(
@@ -206,7 +222,7 @@ async def _crawl_video_all_keyword(job_id: str):
     try:
         async with lifespan_mongo():
             keywords = await SearchService.get_keywords() # Lấy url ưu tiên
-            log.info(f"📦 Tổng số từ khóa: {len(keywords)}")
+            log.info(f"[Keywords] Tổng số từ khóa: {len(keywords)}")
 
             chunk_size = constant.CHUNK_SIZE
             for i in range(0, len(keywords), chunk_size):
@@ -214,7 +230,7 @@ async def _crawl_video_all_keyword(job_id: str):
                 source_dicts = [k.model_dump(mode="json") for k in chunk]
                 countdown = random.randint(1, 4)
 
-                log.info(f"[{job_id}] 🚀 Gửi batch {i//chunk_size + 1}: {source_dicts}")
+                log.info(f"[{job_id}] Gửi batch {i//chunk_size + 1}: {source_dicts}")
                 crawl_video_batch_keyword.apply_async(
                     kwargs={"source_dicts": source_dicts, "job_id": job_id},
                     queue="tiktok_keywords",
@@ -233,19 +249,33 @@ def crawl_video_batch_keyword(source_dicts: list[dict], job_id: str = None):
 async def _crawl_video_batch_keyword(source_dicts: list[dict], job_id: str = None):
     try:
         async with lifespan_mongo():
-            sem = asyncio.Semaphore(constant.CONCURRENCY)  # chỉ chạy 2 video cùng lúc
+            sem = asyncio.Semaphore(constant.CONCURRENCY_KEYWORD)  # chỉ chạy n video cùng lúc
             async def crawl_one(source):
                 async with sem:
                     try:
-                        log.info(f"[{job_id}] 🔍 Crawling: {source['keyword']}")
+                        log.info(f"---------------------------------------------------------------------")
+                        log.info(f"[{job_id}] Đang cào: {source['keyword']}")
                         data = await scrape_search(source['keyword'], max_search=12)
-                        log.info(f"[{job_id}] ✅ Done: {source['keyword']} ({len(data)} items)")
                         await save_to_mongo_keyword(data=data, source=source)
-                        return {"Keyword": source['keyword'], "ok": True, "data_len": len(data)}
+                        log.info(f"[{job_id}] Cào xong: {source['keyword']} ({len(data)} items)")
+                        return {
+                            "keyword": source['keyword'],
+                            "ok": True,
+                            "data_len": len(data)
+                        }
                     except Exception as e:
-                        log.warning(f"[{job_id}] ❌ Failed: {source['keyword']} → {e}")
-                        return {"url": source['keyword'], "ok": False, "error": str(e)}
+                        log.warning(f"[{job_id}] Lỗi: {source['keyword']} → {e}")
+
+                        # with open(output.joinpath("keyword_error.json"), "w", encoding="utf-8") as file:
+                        #     json.dump(source['keyword'], file, indent=2, ensure_ascii=False)
+                        error_keywords.append(source['keyword'])
+                        return {
+                            "keyword": source['keyword'],
+                            "ok": False,
+                            "error": str(e)
+                        }
+            log.info(f"[{job_id}] Bắt đầu cào batch {len(source_dicts)} từ khóa...")
             results = await asyncio.gather(*[crawl_one(source) for source in source_dicts])
-            log.info(f"[{job_id}] 🧾 Batch done: {results}")
+            log.info(f"[{job_id}] Batch done: {results}")
     except Exception as e:
         log.error(f"❌ Lỗi crawl_video_all: {e}")

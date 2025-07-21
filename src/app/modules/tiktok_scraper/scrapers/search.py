@@ -144,7 +144,7 @@ async def obtain_session(url: str) -> str:
         url,
         asp=True,
         proxy_pool="public_datacenter_pool",  # hoặc residential_pool nếu muốn IP người dùng
-        country="Au",
+        country="AU",
         render_js=True,
         rendering_stage="domcontentloaded",
         session=session_id,
@@ -197,24 +197,24 @@ async def scrape_search(keyword: str, max_search: int, search_count: int = 12) -
     search_data = parse_search(first_page)
 
     # scrape the remaining comments concurrently
-    log.info(f"scraping search pagination, remaining {max_search // search_count} more pages")
-    _other_pages = [
-        ScrapeConfig(
-            form_api_url(cursor=cursor), 
-            asp=True,
-            proxy_pool="public_datacenter_pool",  # hoặc residential_pool nếu muốn IP người dùng
-            country="AU",
-            retry=False,
-            timeout=30000,
-            rendering_stage="domcontentloaded",
-            headers={"content-type": "application/json"}, 
-            session=session_id
-        )
-        for cursor in range(search_count, max_search + search_count, search_count)
-    ]
-    async for response in SCRAPFLY.concurrent_scrape(_other_pages):
-        data = parse_search(response)
-        search_data.extend(data)
+    # log.info(f"scraping search pagination, remaining {max_search // search_count} more pages")
+    # _other_pages = [
+    #     ScrapeConfig(
+    #         form_api_url(cursor=cursor), 
+    #         asp=False,
+    #         proxy_pool="public_datacenter_pool",  # hoặc residential_pool nếu muốn IP người dùng
+    #         country="AU",
+    #         retry=False,
+    #         timeout=30000,
+    #         rendering_stage="domcontentloaded",
+    #         headers={"content-type": "application/json"}, 
+    #         session=session_id
+    #     )
+    #     for cursor in range(search_count, max_search + search_count, search_count)
+    # ]
+    # async for response in SCRAPFLY.concurrent_scrape(_other_pages):
+    #     data = parse_search(response)
+    #     search_data.extend(data)
 
     log.info(f"scraped {len(search_data)} from the search API from the keyword {keyword}")
     return search_data

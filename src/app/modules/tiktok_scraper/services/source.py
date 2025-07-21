@@ -6,21 +6,11 @@ from app.modules.tiktok_scraper.models.source import SourceModel
 from app.config import postgres_connection
 from app.utils.timezone import now_vn
 
-
 class SourceService:
 
     @staticmethod
-    async def get_sources_postgre():
-        query = "SELECT * FROM public.tbl_posts WHERE crawl_source_code = 'tt' AND pub_time >= 1743440400"
-        results = await postgres_connection.fetch_all(query)
-        print(f"Fetched {len(results)} sources from PostgreSQL")
-        return [dict(row) for row in results]  # optional: convert Record -> dict
-
-    @staticmethod
     async def get_sources():
-        # return await SourceModel.find().sort("-_id").to_list()
-        return await SourceModel.find(SourceModel.org_id != 0).limit(5).to_list()
-        # return await SourceModel.find(SourceModel.org_id != 0).to_list()
+        return await SourceModel.find(SourceModel.org_id != 0).to_list()
 
     @staticmethod
     async def get_source_by_id(source_url: any):
@@ -36,7 +26,6 @@ class SourceService:
             await SourceModel(**data).insert()
             return "inserted"
         
-
     @staticmethod
     async def get_sources_classified():
         return await SourceModel.find(SourceModel.org_id != 0).to_list()
@@ -73,3 +62,10 @@ class SourceService:
 
         result = await SourceModel.get_motor_collection().bulk_write(operations)
         return result.upserted_count + result.modified_count
+    
+    # @staticmethod
+    # async def get_sources_postgre():
+    #     query = "SELECT * FROM public.tbl_posts WHERE crawl_source_code = 'tt' AND pub_time >= 1743440400"
+    #     results = await postgres_connection.fetch_all(query)
+    #     print(f"Fetched {len(results)} sources from PostgreSQL")
+    #     return [dict(row) for row in results]  # optional: convert Record -> dict

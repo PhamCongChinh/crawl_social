@@ -9,11 +9,11 @@ from bson import Int64
 from beanie.operators import In, And
 
 from app.modules.elastic_search.service import postToES, postToESUnclassified
-from app.modules.tiktok_scraper.models.channel import ChannelModel
+# from app.modules.tiktok_scraper.models.channel import ChannelModel
 from app.modules.tiktok_scraper.models.video import VideoModel
 from app.modules.tiktok_scraper.scrapers.post import scrape_posts
 from app.modules.tiktok_scraper.scrapers.search import scrape_search
-from app.modules.tiktok_scraper.services.channel import ChannelService
+# from app.modules.tiktok_scraper.services.channel import ChannelService
 from app.modules.tiktok_scraper.services.video import VideoService
 from app.modules.tiktok_scraper.services.search import SearchService
 from app.utils.delay import async_delay
@@ -24,8 +24,9 @@ from app.worker import celery_app
 
 VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
 
-output = Path(__file__).parent / "results"
-output.mkdir(exist_ok=True)
+output = Path("logs")
+output.mkdir(parents=True, exist_ok=True)
+error_log_file = output / "keyword_error.json"
 
 # @celery_app.task(
 #     name="app.tasks.tiktok.post.crawl_tiktok_search_hourly",

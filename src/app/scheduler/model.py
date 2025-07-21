@@ -1,6 +1,6 @@
 from uuid import uuid4
 from beanie import Document, PydanticObjectId
-from typing import Literal, Optional
+from typing import Dict, Literal, Optional
 from datetime import datetime
 from bson import ObjectId
 from pydantic import BaseModel, Field
@@ -21,19 +21,10 @@ from pydantic import BaseModel, Field
 #         name = "tiktok_jobs"
 
 class JobModel(Document):
-    # id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    job_name: str
-    crawl_type: Literal[
-        "video_classified",
-        "channel", 
-        "post", 
-        "comment", 
-        "profile", 
-        "video_unclassified",
-        "video_keyword"
-    ]
+    job_id: str
+    job_type: str
     trigger_type: Literal["cron", "interval"]
-    cron: Optional[str] = None
+    cron: Optional[Dict[str, int]] = None
     interval_seconds: Optional[int] = None
     status: Literal["active", "paused"] = "active"
     created_at: datetime = Field(default_factory=datetime.utcnow)

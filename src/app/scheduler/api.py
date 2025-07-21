@@ -14,13 +14,16 @@ async def create_job(job: JobModel):
     # Lưu vào Mongo
     await job.create()
     # Add vào scheduler
-    # await add_job(job)
-    return {"message": "Job created", "job_name": job.job_name}
+    await add_job(job)
+    return {"message": "Job created", "job_id": job.job_id}
 
+
+# List Jobs
 @router.get("")
 async def list_jobs():
     jobs = await JobModel.find_all().to_list()
     return jobs
+
 
 @router.delete("/{job_id}")
 async def delete_job(job_id: str):
@@ -35,7 +38,8 @@ async def delete_job(job_id: str):
 @router.post("/{job_id}/pause")
 async def pause_job(job_id: str):
     scheduler.pause_job(job_id)
-    await JobModel.find_one(JobModel.id == job_id).update({"$set": {"status": "paused"}})
+    # await JobModel.find_one(JobModel.id == job_id).update({"$set": {"status": "paused"}})
+    await JobModel.find_one(JobModel.job_name == job_id).update({"$set": {"status": "paused"}})
     return {"message": "Job paused"}
 
 @router.post("/{job_id}/resume")

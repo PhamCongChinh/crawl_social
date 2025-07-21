@@ -65,7 +65,7 @@ services:
       - redis_server
       - fastapi_app
     command: >
-      poetry run celery -A app.worker worker --concurrency=1 --loglevel=info -Q tiktok_videos -n tiktok_videos@%h
+      poetry run celery -A app.worker worker --concurrency=2 --loglevel=info -Q tiktok_videos -n tiktok_videos@%h
   
   tiktok_keywords:
     build:
@@ -83,6 +83,24 @@ services:
     command: >
       poetry run celery -A app.worker worker --concurrency=1 --loglevel=info -Q tiktok_keywords -n tiktok_keywords@%h
 
+
+
+  # WORKER TEST
+  tiktok_test:
+    build:
+      context: .
+    container_name: tiktok_test
+    volumes:
+      - ./src:/app/src
+      - ./pyproject.toml:/app/pyproject.toml
+      - ./poetry.lock:/app/poetry.lock
+    env_file:
+      - .env
+    depends_on:
+      - redis_server
+      - fastapi_app
+    command: >
+      poetry run celery -A app.worker worker --concurrency=1 --loglevel=info -Q tiktok_test -n tiktok_test@%h
 
   # worker_tiktok_comments:
   #   build:

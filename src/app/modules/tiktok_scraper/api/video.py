@@ -1,21 +1,19 @@
-from fastapi import APIRouter, HTTPException
+from typing import List
+from fastapi import APIRouter, HTTPException, status
 
 import logging
 
+from app.modules.tiktok_scraper.dto import VideoResponse
 from app.modules.tiktok_scraper.services.video import VideoService
 from app.tasks.tiktok.video import crawl_video_all_classified, crawl_video_all_keyword, crawl_video_all_unclassified
 log = logging.getLogger(__name__)
 
 router = APIRouter()
 
-@router.get("/videos")
+@router.get("/videos", response_model=List[VideoResponse])
 async def get_videos():
     try:
-        log.info("Đang lấy dữ liệu Videos")
         videos = await VideoService.get_videos()
-        log.info(f"Đã lấy được {len(videos)} videos")
-        if not videos:
-            raise HTTPException(status_code=204, detail="Không có dữ liệu")
         log.info(f"Đã lấy được {len(videos)} videos")
         return videos
     except Exception as e:

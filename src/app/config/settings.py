@@ -43,4 +43,3 @@ class Settings(BaseSettings):
     }
 
 settings = Settings()
-print("✅ Đã khởi tạo Settings xong")

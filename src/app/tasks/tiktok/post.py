@@ -8,11 +8,9 @@ from zoneinfo import ZoneInfo
 from bson import Int64
 from app.core.lifespan_mongo import lifespan_mongo
 from app.modules.elastic_search.service import postToES, postToESUnclassified
-from app.modules.tiktok_scraper.models.channel import ChannelModel
 from app.modules.tiktok_scraper.models.video import VideoModel
 from app.modules.tiktok_scraper.scrapers.comment import scrape_comments
 from app.modules.tiktok_scraper.scrapers.post import scrape_posts
-from app.modules.tiktok_scraper.services.channel import ChannelService
 from app.modules.tiktok_scraper.services.post import PostService
 from app.modules.tiktok_scraper.services.video import VideoService
 from app.utils.concurrency import limited_gather
@@ -264,7 +262,6 @@ async def _crawl_video_all_posts_backdate(job_id: str, from_date, to_date):
                     queue="tiktok_posts",
                     countdown=countdown,
                 )
-                # break
     except Exception as e:
         log.error(f"❌ Lỗi crawl_video_all: {e}")
 
@@ -313,131 +310,131 @@ def check_post_result(response_data: dict):
 
 
 
-@celery_app.task(
-    name="app.tasks.tiktok.post.crawl_tiktok_posts",
-)
-def crawl_tiktok_posts(from_date: int, to_date: int):
+# @celery_app.task(
+#     name="app.tasks.tiktok.post.crawl_tiktok_posts",
+# )
+# def crawl_tiktok_posts(from_date: int, to_date: int):
 
-    async def do_crawl():
-        try:
-            await mongo_connection.connect()
-            videos = await ChannelService.get_posts_backdate(from_date=from_date, to_date=to_date)
-            log.info(f"🚀 Đang cào {len(videos)}")
-            video_dicts = [v.model_dump() for v in videos]
-            # Chia batch
-            batches = [video_dicts[i:i + BATCH_SIZE] for i in range(0, len(video_dicts), BATCH_SIZE)]
-            log.info(f"📦 Tổng cộng {len(videos)} video, chia thành {len(batches)} batch (mỗi batch {BATCH_SIZE} video)")
-            for i, batch in enumerate(batches, start=1):
-                log.info(f"🚀 Batch {i}/{len(batches)}: {len(batch)} video")
+#     async def do_crawl():
+#         try:
+#             await mongo_connection.connect()
+#             videos = await ChannelService.get_posts_backdate(from_date=from_date, to_date=to_date)
+#             log.info(f"🚀 Đang cào {len(videos)}")
+#             video_dicts = [v.model_dump() for v in videos]
+#             # Chia batch
+#             batches = [video_dicts[i:i + BATCH_SIZE] for i in range(0, len(video_dicts), BATCH_SIZE)]
+#             log.info(f"📦 Tổng cộng {len(videos)} video, chia thành {len(batches)} batch (mỗi batch {BATCH_SIZE} video)")
+#             for i, batch in enumerate(batches, start=1):
+#                 log.info(f"🚀 Batch {i}/{len(batches)}: {len(batch)} video")
 
-                # 1. Update status
-                ids = [v["id"] for v in batch]
-                await ChannelModel.find(In(ChannelModel.id, ids)).update_many({
-                    "$set": {"status": "processing"}
-                })
+#                 # 1. Update status
+#                 ids = [v["id"] for v in batch]
+#                 await ChannelModel.find(In(ChannelModel.id, ids)).update_many({
+#                     "$set": {"status": "processing"}
+#                 })
 
-                await _crawl_batch_async(batch, i, len(batches))  # ✅ xử lý tuần tự từng batch
-                await async_delay(240,300)
-            return {"message": "Đã xử lý toàn bộ batch", "total_videos": len(videos)}
-        except Exception as e:
-            log.error(e)
-            await mongo_connection.disconnect()
-    return asyncio.run(do_crawl())
+#                 await _crawl_batch_async(batch, i, len(batches))  # ✅ xử lý tuần tự từng batch
+#                 await async_delay(240,300)
+#             return {"message": "Đã xử lý toàn bộ batch", "total_videos": len(videos)}
+#         except Exception as e:
+#             log.error(e)
+#             await mongo_connection.disconnect()
+#     return asyncio.run(do_crawl())
 
 
-async def _crawl_batch_async(videos: list[dict], batch_index: int, total_batches: int):
-    log.info(f"🔧 Bắt đầu xử lý batch {batch_index}/{total_batches} với {len(videos)} video")
-    data_list_classified = []
-    data_list_unclassified = []
-    for index, video in enumerate(videos):
-        log.info(f"🕐 [{index + 1}/{len(videos)}] Video ID: {video['id']}")
-        # Phân loại
-        if video["org_id"] == 0:
-            data_list_unclassified.append(video)
-        else:
-            data_list_classified.append(video)
+# async def _crawl_batch_async(videos: list[dict], batch_index: int, total_batches: int):
+#     log.info(f"🔧 Bắt đầu xử lý batch {batch_index}/{total_batches} với {len(videos)} video")
+#     data_list_classified = []
+#     data_list_unclassified = []
+#     for index, video in enumerate(videos):
+#         log.info(f"🕐 [{index + 1}/{len(videos)}] Video ID: {video['id']}")
+#         # Phân loại
+#         if video["org_id"] == 0:
+#             data_list_unclassified.append(video)
+#         else:
+#             data_list_classified.append(video)
 
-    log.info(f"🎯 Batch {batch_index}: {len(data_list_classified)} classified, {len(data_list_unclassified)} unclassified")
-    # Crawl & post classified
-    if data_list_classified:
-        post_data_classified = await crawl_tiktok_post_list_direct_classified(data_list_classified)
-        if post_data_classified:
-            await postToES(post_data_classified)
-            log.info(f"Đã thêm {len(post_data_classified)} video đã phân loại vào ElasticSearch")
-    # Crawl & post unclassified
-    if data_list_unclassified:
-        post_data_unclassified = await crawl_tiktok_post_list_direct_unclassified(data_list_unclassified)
-        print(f"post_data: {post_data_unclassified}")
-        if post_data_unclassified:
-            await postToESUnclassified(post_data_unclassified)
-            log.info(f"Đã thêm {len(post_data_unclassified)} video chưa phân loại vào ElasticSearch")
-    print(f"📦 Tổng số video đã lấy: {len(data_list_classified) + len(data_list_unclassified)}")
-    print(f"✅ Hoàn tất batch {batch_index}/{total_batches}")
+#     log.info(f"🎯 Batch {batch_index}: {len(data_list_classified)} classified, {len(data_list_unclassified)} unclassified")
+#     # Crawl & post classified
+#     if data_list_classified:
+#         post_data_classified = await crawl_tiktok_post_list_direct_classified(data_list_classified)
+#         if post_data_classified:
+#             await postToES(post_data_classified)
+#             log.info(f"Đã thêm {len(post_data_classified)} video đã phân loại vào ElasticSearch")
+#     # Crawl & post unclassified
+#     if data_list_unclassified:
+#         post_data_unclassified = await crawl_tiktok_post_list_direct_unclassified(data_list_unclassified)
+#         print(f"post_data: {post_data_unclassified}")
+#         if post_data_unclassified:
+#             await postToESUnclassified(post_data_unclassified)
+#             log.info(f"Đã thêm {len(post_data_unclassified)} video chưa phân loại vào ElasticSearch")
+#     print(f"📦 Tổng số video đã lấy: {len(data_list_classified) + len(data_list_unclassified)}")
+#     print(f"✅ Hoàn tất batch {batch_index}/{total_batches}")
 
-@celery_app.task(
-    queue="tiktok_posts",
-    name="app.tasks.tiktok.channel.crawl_tiktok_posts_hourly"
-)
-def crawl_tiktok_posts_hourly(job_name:str, crawl_type: str):
-    async def do_crawl():
-        try:
-            log.info("Lấy dữ liệu bài viết hằng ngày")
-            await mongo_connection.connect()
-            videos = await ChannelService.get_channels_posts_hourly()
-            if len(videos) == 0:
-                log.info("Không có dữ liệu trong ngày")
-                await mongo_connection.disconnect()
-                return
+# @celery_app.task(
+#     queue="tiktok_posts",
+#     name="app.tasks.tiktok.channel.crawl_tiktok_posts_hourly"
+# )
+# def crawl_tiktok_posts_hourly(job_name:str, crawl_type: str):
+#     async def do_crawl():
+#         try:
+#             log.info("Lấy dữ liệu bài viết hằng ngày")
+#             await mongo_connection.connect()
+#             videos = await ChannelService.get_channels_posts_hourly()
+#             if len(videos) == 0:
+#                 log.info("Không có dữ liệu trong ngày")
+#                 await mongo_connection.disconnect()
+#                 return
             
-            video_dicts = [v.model_dump() for v in videos]
-            # Chia batch
-            batches = [video_dicts[i:i + BATCH_SIZE] for i in range(0, len(video_dicts), BATCH_SIZE)]
-            log.info(f"📦 Tổng cộng {len(videos)} video, chia thành {len(batches)} batch (mỗi batch {BATCH_SIZE} video)")
-            for i, batch in enumerate(batches, start=1):
-                log.info(f"🚀 Batch {i}/{len(batches)}: {len(batch)} video")
+#             video_dicts = [v.model_dump() for v in videos]
+#             # Chia batch
+#             batches = [video_dicts[i:i + BATCH_SIZE] for i in range(0, len(video_dicts), BATCH_SIZE)]
+#             log.info(f"📦 Tổng cộng {len(videos)} video, chia thành {len(batches)} batch (mỗi batch {BATCH_SIZE} video)")
+#             for i, batch in enumerate(batches, start=1):
+#                 log.info(f"🚀 Batch {i}/{len(batches)}: {len(batch)} video")
 
-                # 1. Update status
-                ids = [v["id"] for v in batch]
-                await ChannelModel.find(In(ChannelModel.id, ids)).update_many({
-                    "$set": {"status": "processing"}
-                })
+#                 # 1. Update status
+#                 ids = [v["id"] for v in batch]
+#                 await ChannelModel.find(In(ChannelModel.id, ids)).update_many({
+#                     "$set": {"status": "processing"}
+#                 })
 
-                await _crawl_batch_async(batch, i, len(batches))  # ✅ xử lý tuần tự từng batch
-                await async_delay(90,120)
-            return {"message": "Đã xử lý toàn bộ batch", "total_videos": len(videos)}
+#                 await _crawl_batch_async(batch, i, len(batches))  # ✅ xử lý tuần tự từng batch
+#                 await async_delay(90,120)
+#             return {"message": "Đã xử lý toàn bộ batch", "total_videos": len(videos)}
 
-            # ids = [str(v.id) for v in videos]
-            # video_dicts = [v.model_dump() for v in videos]
-            # await ChannelModel.find(In(ChannelModel.id, ids)).update_many({"$set": {"status": "processing"}})
-            # log.info(f"🚀 Đang cào {len(video_dicts)} video")
+#             # ids = [str(v.id) for v in videos]
+#             # video_dicts = [v.model_dump() for v in videos]
+#             # await ChannelModel.find(In(ChannelModel.id, ids)).update_many({"$set": {"status": "processing"}})
+#             # log.info(f"🚀 Đang cào {len(video_dicts)} video")
 
 
-            # data_list_classified = []
-            # data_list_unclassified = []
-            # for index, video in enumerate(video_dicts):
-            #     log.info(f"🕐 [{index+1}/{len(video_dicts)}] {video['id']}")
-            #     if video["org_id"] == 0:
-            #         data_list_unclassified.append(video)
-            #     else:
-            #         data_list_classified.append(video)
-            # # Crawl & post classified
-            # if data_list_classified:
-            #     post_data_classified = await crawl_tiktok_post_list_direct_classified(data_list_classified)
-            #     if post_data_classified:
-            #         await postToES(post_data_classified)
-            #         log.info(f"Đã thêm {len(post_data_classified)} video đã phân loại vào ElasticSearch")
-            # # Crawl & post unclassified
-            # if data_list_unclassified:
-            #     post_data_unclassified = await crawl_tiktok_post_list_direct_unclassified(data_list_unclassified)
-            #     if post_data_unclassified:
-            #         await postToESUnclassified(post_data_unclassified)
-            #         log.info(f"Đã thêm {len(post_data_unclassified)} video chưa phân loại vào ElasticSearch")
-            # log.info(f"📦 Tổng số video đã lấy: {len(data_list_classified) + len(data_list_unclassified)}")
-            await mongo_connection.disconnect()
-        except Exception as e:
-            log.error(f"❌ Lỗi khi cào dữ liệu: {e}")
-            await mongo_connection.disconnect()
-    return asyncio.run(do_crawl())
+#             # data_list_classified = []
+#             # data_list_unclassified = []
+#             # for index, video in enumerate(video_dicts):
+#             #     log.info(f"🕐 [{index+1}/{len(video_dicts)}] {video['id']}")
+#             #     if video["org_id"] == 0:
+#             #         data_list_unclassified.append(video)
+#             #     else:
+#             #         data_list_classified.append(video)
+#             # # Crawl & post classified
+#             # if data_list_classified:
+#             #     post_data_classified = await crawl_tiktok_post_list_direct_classified(data_list_classified)
+#             #     if post_data_classified:
+#             #         await postToES(post_data_classified)
+#             #         log.info(f"Đã thêm {len(post_data_classified)} video đã phân loại vào ElasticSearch")
+#             # # Crawl & post unclassified
+#             # if data_list_unclassified:
+#             #     post_data_unclassified = await crawl_tiktok_post_list_direct_unclassified(data_list_unclassified)
+#             #     if post_data_unclassified:
+#             #         await postToESUnclassified(post_data_unclassified)
+#             #         log.info(f"Đã thêm {len(post_data_unclassified)} video chưa phân loại vào ElasticSearch")
+#             # log.info(f"📦 Tổng số video đã lấy: {len(data_list_classified) + len(data_list_unclassified)}")
+#             await mongo_connection.disconnect()
+#         except Exception as e:
+#             log.error(f"❌ Lỗi khi cào dữ liệu: {e}")
+#             await mongo_connection.disconnect()
+#     return asyncio.run(do_crawl())
 
 
 # def _chunk_sources(sources: List, batch_size: int) -> List[List]:

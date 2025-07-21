@@ -6,7 +6,7 @@ from typing import List
 from bson import Int64
 
 from app.modules.elastic_search.service import postToES
-from app.modules.tiktok_scraper.models.channel import ChannelModel
+# from app.modules.tiktok_scraper.models.channel import ChannelModel
 from app.modules.tiktok_scraper.scrapers.comment import scrape_comments
 from app.modules.tiktok_scraper.services.post import PostService
 from app.utils.concurrency import limited_gather
@@ -14,7 +14,7 @@ from app.utils.delay import async_delay
 from app.utils.timezone import VN_TZ
 log = logging.getLogger(__name__)
 
-from app.modules.tiktok_scraper.services.channel import ChannelService
+# from app.modules.tiktok_scraper.services.channel import ChannelService
 from app.worker import celery_app
 
 from app.config import mongo_connection, postgres_connection
@@ -28,7 +28,7 @@ def crawl_tiktok_comments_hourly(job_name: str, crawl_type: str):
     async def do_crawl():
         try:
             await postgres_connection.connect()
-            posts = await ChannelService.get_channels_comments_hourly() # Lấy video từ PostgreSQL
+            posts = None#await ChannelService.get_channels_comments_hourly() # Lấy video từ PostgreSQL
             log.info(f"🚀 Tổng cộng {len(posts)} video")
             if len(posts) == 0:
                 log.info("Không có video nào để cào")
@@ -64,7 +64,7 @@ def crawl_tiktok_comments(self, job_id: str, channel_id: str):
         try:
             await postgres_connection.connect()
             # channels = await ChannelService.get_channels_crawl_comments()
-            posts = await ChannelService.get_posts_postgre(1749834000, 1749920400) # Lấy video từ PostgreSQL
+            posts = []#await ChannelService.get_posts_postgre(1749834000, 1749920400) # Lấy video từ PostgreSQL
             log.info(f"🚀 Tổng cộng {len(posts)} video")
 
             for idx, batch in enumerate(chunked(posts, 1)): # batch là video
@@ -198,7 +198,7 @@ def flatten_post_list_1(raw_list: list[dict], post: dict) -> list[dict]:
 async def crawl_tiktok_comment_direct(channel: dict):
     try:
         await mongo_connection.connect()
-        channel_model = ChannelModel(**channel)
+        channel_model = None#ChannelModel(**channel)
 
         log.info(f"🔍 Crawling source: {channel_model.id}")
         
@@ -213,7 +213,7 @@ async def crawl_tiktok_comment_direct(channel: dict):
         log.info("comment: " + str(comment))
         await postToES(comment)
         await async_delay(2,3)
-        await ChannelService.channel_crawled_comments(channel_model.id)
+        # await ChannelService.channel_crawled_comments(channel_model.id)
 
         result = await PostService.upsert_posts_bulk(data, channel=channel_model)
         
@@ -221,7 +221,7 @@ async def crawl_tiktok_comment_direct(channel: dict):
     except Exception as e:
         log.error(e)
 
-def flatten_post_data_comment(raw: dict, channel: ChannelModel) -> dict:
+def flatten_post_data_comment(raw: dict, channel: dict) -> dict:
     return {
         "id": raw.get("cid", ""),
         "doc_type": 2, # POST = 1, COMMENT = 2
@@ -258,7 +258,7 @@ def flatten_post_data_comment(raw: dict, channel: ChannelModel) -> dict:
         "crawl_bot": "tiktok_comment",
     }
 
-def flatten_post_list(raw_list: list[dict], channel: ChannelModel) -> list[dict]:
+def flatten_post_list(raw_list: list[dict], channel: dict) -> list[dict]:
     print(f"Đang crawl {len(raw_list)} comments for channel {channel.id}")
     flattened = []
     for item in raw_list:
