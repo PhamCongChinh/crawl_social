@@ -14,9 +14,18 @@ class VideoService:
     async def get_videos() -> list[VideoModel]:
         videos = await VideoModel.find_all().limit(20).to_list()
         return videos
-
+    
+    # V1
     @staticmethod
-    async def upsert_channels_bulk_keyword(scrape_data: list[dict], keyword: dict):
+    async def upsert_processing_to_pending():
+        return await VideoModel.find(
+            Eq(VideoModel.status, "processing")
+        ).update_many({"$set": {"status": "pending"}})
+    
+
+    # v1
+    @staticmethod
+    async def upsert_videos_bulk_keyword(scrape_data: list[dict], keyword: dict):
         """
             Bulk upsert list channels theo channel_id:
             - Nếu tồn tại → update tất cả các trường + updated_at
@@ -36,10 +45,10 @@ class VideoService:
                     continue
                 
                 mapped = {
-                    "video_id": cid,#
+                    "video_id": cid,
                     "video_url": f"https://www.tiktok.com/@{data.get('author', {}).get('uniqueId', '')}/video/{cid}",
-                    "contents": data.get("desc"),#
-                    "create_time": data.get("createTime"),#
+                    "contents": data.get("desc"),
+                    "create_time": data.get("createTime"),
                     "org_id": 0,#keyword["org_id"],
                     "source_type": keyword["source_type"],
                     "source_name": data.get("author", {}).get("nickname", ""),
@@ -66,18 +75,19 @@ class VideoService:
                 log.info("Không có operation nào được tạo cho bulk upsert.")
                 return
             result = await VideoModel.get_motor_collection().bulk_write(operations)
-            print(result)
-            # log.info(f"Bulk upsert xong: inserted={result.upserted_count}, modified={result.modified_count}")
             return {
+                "inserted": result.upserted_count, # Thêm mới
                 "matched": result.matched_count,
                 "modified": result.modified_count,
                 "upserted": len(result.upserted_ids)
             }
         except Exception as e:
             log.error(e)
+            raise
 
+    # v1
     @staticmethod
-    async def upsert_channels_bulk_channel(scrape_data: list[dict], channel: dict):
+    async def upsert_videos_bulk_url(scrape_data: list[dict], channel: dict):
         """
             Bulk upsert list channels theo channel_id:
             - Nếu tồn tại → update tất cả các trường + updated_at
@@ -128,36 +138,34 @@ class VideoService:
                 return
             result = await VideoModel.get_motor_collection().bulk_write(operations)
             return {
-                "inserted": result.upserted_count,
+                "inserted": result.upserted_count, # Thêm mới
                 "matched": result.matched_count,
                 "modified": result.modified_count,
                 "upserted": len(result.upserted_ids)
             }
         except Exception as e:
             log.error(e)
+            raise
 
-
-
-    @staticmethod
-    async def upsert_processing_to_pending():
-        return await VideoModel.find(
-            Eq(VideoModel.status, "processing")
-        ).update_many({"$set": {"status": "pending"}})
-    
-
+    # v1
     @staticmethod
     async def get_videos_daily():
         vn_now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
-
         # Lấy thời điểm đầu ngày (0h00)
-        start_of_day = datetime(vn_now.year, vn_now.month, vn_now.day, tzinfo=ZoneInfo("Asia/Ho_Chi_Minh"))
-        
-        from_timestamp = int(start_of_day.timestamp())
+        # start_of_day = datetime(vn_now.year, vn_now.month, vn_now.day, tzinfo=ZoneInfo("Asia/Ho_Chi_Minh"))
+        # from_timestamp = int(start_of_day.timestamp())
+        # to_timestamp = int(vn_now.timestamp())
+        # log.info(f"Giờ hiện tại: {vn_now}")
+        # log.info(f"Bắt đầu ngày: {start_of_day}")
+
+        # 24h trước
+        from_hour_ago = vn_now - timedelta(hours=24)
+        from_timestamp = int(from_hour_ago.timestamp())
         to_timestamp = int(vn_now.timestamp())
 
+        log.info(f"Bắt đầu từ: {from_timestamp}")
         log.info(f"Giờ hiện tại: {vn_now}")
-        log.info(f"Bắt đầu ngày: {start_of_day}")
-
+        
         return await VideoModel.find(
             And(
                 VideoModel.status == "pending",
@@ -166,6 +174,7 @@ class VideoService:
             )
         ).to_list()
     
+    # v1
     @staticmethod
     async def get_videos_backdate(from_date: int, to_date: int):
         return await VideoModel.find(

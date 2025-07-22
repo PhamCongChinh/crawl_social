@@ -1,6 +1,5 @@
 from celery import Celery
 from app.config.settings import settings
-from celery.schedules import crontab
 from kombu import Queue
 
 celery_app = Celery(

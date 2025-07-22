@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 import uvicorn
 
@@ -17,6 +18,9 @@ from app.modules.thread_scraper.api import router as thread_router
 from app.modules.instagram_scraper.api import router as instagram_router
 from app.modules.google_scraper.api import router as google_router
 
+from pathlib import Path
+BASE_DIR = Path(__file__).resolve().parent
+templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
 app = FastAPI(title="Social Media Crawler API", version="1.0.0", lifespan=lifespan)
 
@@ -28,8 +32,12 @@ app.include_router(thread_router, prefix="/api/v1/thread", tags=["thread"])
 app.include_router(instagram_router, prefix="/api/v1/instagram", tags=["instagram"])  
 app.include_router(google_router, prefix="/api/v1/google", tags=["google"])  
 
-def main():
-    uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)
+@app.get("/", response_class=HTMLResponse)
+async def read_root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
-if __name__ == "__main__":
-    main()
+# def main():
+#     uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)
+
+# if __name__ == "__main__":
+#     main()

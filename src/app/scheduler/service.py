@@ -4,7 +4,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
-# from app.tasks.crawl_tiktok import crawl_tiktok
+import logging
+log = logging.getLogger(__name__)
 
 from app.tasks.tiktok.task_map import TASK_MAP
 
@@ -82,7 +83,7 @@ async def add_job(metadata: JobModel):
             replace_existing=True,
             misfire_grace_time=30 # cho phép job trễ 30s vẫn chạy
         )
-        print(f"✅ Job {job_id} đã được lập lịch ({'cron' if metadata.cron else 'interval'})")
+        log.info(f"Job {job_id} đã được lập lịch ({'cron' if metadata.cron else 'interval'})")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi khi thêm job: {e}")
     

@@ -7,7 +7,11 @@ import jmespath
 from app.core.scrapfly import SCRAPFLY
 
 import logging
+
+from app.helpers.telegram import Telegram
 log = logging.getLogger(__name__)
+
+TELEGRAM = Telegram()
 
 def parse_channel(response: ScrapeApiResponse):
     _xhr_calls = response.scrape_result["browser_data"]["xhr_call"]
@@ -17,7 +21,7 @@ def parse_channel(response: ScrapeApiResponse):
         try:
             data = json.loads(post_call["response"]["body"])["itemList"]
         except Exception:
-            raise Exception("Post data couldn't load")
+            raise Exception("[SCRAPFLY] Dữ liệu bài đăng không thể tải được")
         channel_data.extend(data)
     # parse all the data using jmespath
     parsed_data = []
@@ -43,7 +47,7 @@ def parse_channel(response: ScrapeApiResponse):
 async def scrape_channel(url: str) -> List[Dict]:
     """scrape video data from a channel (profile with videos)"""
     # js = """const scrollToEnd = (i = 0) => (window.innerHeight + window.scrollY >= document.body.scrollHeight || i >= 15) ? (console.log("Reached the bottom or maximum iterations. Stopping further iterations."), setTimeout(() => console.log("Waited 10 seconds after all iterations."), 10000)) : (window.scrollTo(0, document.body.scrollHeight), setTimeout(() => scrollToEnd(i + 1), 5000)); scrollToEnd();"""
-    log.info(f"[Scraper Video] Đang thu thập dữ liệu từ {url}.")
+    log.info(f"[SCRAPFLY] Đang thu thập dữ liệu từ {url}.")
     try:
         response = await SCRAPFLY.async_scrape(ScrapeConfig(
             url,
@@ -55,19 +59,22 @@ async def scrape_channel(url: str) -> List[Dict]:
             cost_budget=10,
             retry=False,
             timeout=30000,
-            rendering_stage="domcontentloaded"
+            rendering_stage="domcontentloaded",
+            # js=js,
+            # auto_scroll=True
         ))
 
         if response.cost > 6:
-            log.info(f"[Scraper Cost] ❌ Cost: {response.cost} | Status: {response.status_code} | URL: {url}")
+            log.warning(f"[SCRAPFLY] ❌ Chi phí: {response.cost} | URL: {url}")
+            TELEGRAM.send_alert(f"[SCRAPFLY] Cost: {response.cost} | URL: {url}")
         else:
-            log.info(f"[Scraper Cost] ✅ Cost: {response.cost} | Status: {response.status_code} | URL: {url}")
-
+            log.info(f"[SCRAPFLY] ✅ Chi phí: {response.cost} | URL: {url}")
+            
         data = parse_channel(response)
-        log.info(f"[Scraper Video] 🧹 Đã quét được {len(data)} bài viết từ kênh {url}")
+        log.info(f"[SCRAPFLY] Đã quét được {len(data)} bài viết từ kênh {url}")
         return data
 
     except Exception as e:
-        log.error(f"[Scraper Video] ❌ Lỗi khi quét {url} → {e}")
+        log.error(f"[SCRAPFLY] Lỗi khi quét {url} → {e}")
         raise
     

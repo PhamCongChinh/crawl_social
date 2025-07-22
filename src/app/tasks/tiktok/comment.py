@@ -5,16 +5,13 @@ from typing import List
 
 from bson import Int64
 
-from app.modules.elastic_search.service import postToES
-# from app.modules.tiktok_scraper.models.channel import ChannelModel
+from app.modules.elastic_search.service import postToESClassified
 from app.modules.tiktok_scraper.scrapers.comment import scrape_comments
 from app.modules.tiktok_scraper.services.post import PostService
-from app.utils.concurrency import limited_gather
 from app.utils.delay import async_delay
 from app.utils.timezone import VN_TZ
 log = logging.getLogger(__name__)
 
-# from app.modules.tiktok_scraper.services.channel import ChannelService
 from app.worker import celery_app
 
 from app.config import mongo_connection, postgres_connection
@@ -42,7 +39,7 @@ def crawl_tiktok_comments_hourly(job_name: str, crawl_type: str):
                     comments = await crawl_tiktok_comment_direct_1(post)
                     comments_batch.extend(comments)
                     await async_delay(10, 15) # Giả lập delay để tránh quá tải
-                await postToES(comments_batch) # Gửi lên Elasticsearch
+                await postToESClassified(comments_batch) # Gửi lên Elasticsearch
                 await async_delay(10, 15) # Giả lập delay để tránh quá tải
             await async_delay(1,2)
             log.info(f"✅ Hoàn thành cào {len(posts)} video, tổng cộng {len(comments_batch)} comments")
@@ -76,7 +73,7 @@ def crawl_tiktok_comments(self, job_id: str, channel_id: str):
                     await async_delay(1, 2) # Giả lập delay để tránh quá tải
                 print(comments_batch)
                 if len(comments_batch) > 0:
-                    await postToES(comments_batch) # Gửi lên Elasticsearch
+                    await postToESClassified(comments_batch) # Gửi lên Elasticsearch
                     await async_delay(120,140) # Giả lập delay để tránh quá tải
                 
             log.info(f"✅ Hoàn thành cào {len(posts)} video, tổng cộng {len(comments_batch)} comments")
@@ -211,7 +208,7 @@ async def crawl_tiktok_comment_direct(channel: dict):
         await async_delay(2,4)
         comment = flatten_post_list(data, channel=channel_model)
         log.info("comment: " + str(comment))
-        await postToES(comment)
+        await postToESClassified(comment)
         await async_delay(2,3)
         # await ChannelService.channel_crawled_comments(channel_model.id)
 

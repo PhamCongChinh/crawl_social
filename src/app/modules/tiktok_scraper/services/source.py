@@ -8,14 +8,22 @@ from app.utils.timezone import now_vn
 
 class SourceService:
 
+    # V1
+    @staticmethod
+    async def get_sources_classified():
+        return await SourceModel.find(SourceModel.org_id != 0).to_list()
+    
+    # V1
+    @staticmethod
+    async def get_sources_unclassified():
+        return await SourceModel.find(SourceModel.org_id == 0).to_list()
+    
+    # V1
     @staticmethod
     async def get_sources():
-        return await SourceModel.find(SourceModel.org_id != 0).to_list()
+        return await SourceModel.find_all().limit(20).to_list()
 
-    @staticmethod
-    async def get_source_by_id(source_url: any):
-        return await SourceModel.find(SourceModel.source_url == source_url).to_list()
-
+    # v1
     @staticmethod
     async def upsert_source(data: dict) -> SourceModel:
         existing = await SourceModel.find_one(SourceModel.source_url == data["source_url"])
@@ -25,15 +33,8 @@ class SourceService:
         else:
             await SourceModel(**data).insert()
             return "inserted"
-        
-    @staticmethod
-    async def get_sources_classified():
-        return await SourceModel.find(SourceModel.org_id != 0).to_list()
-    
-    @staticmethod
-    async def get_sources_unclassified():
-        return await SourceModel.find(SourceModel.org_id == 0).to_list()
 
+    # v1
     @staticmethod
     async def upsert_source_batch(sources: list[dict]) -> int:
         now = now_vn()
@@ -62,10 +63,3 @@ class SourceService:
 
         result = await SourceModel.get_motor_collection().bulk_write(operations)
         return result.upserted_count + result.modified_count
-    
-    # @staticmethod
-    # async def get_sources_postgre():
-    #     query = "SELECT * FROM public.tbl_posts WHERE crawl_source_code = 'tt' AND pub_time >= 1743440400"
-    #     results = await postgres_connection.fetch_all(query)
-    #     print(f"Fetched {len(results)} sources from PostgreSQL")
-    #     return [dict(row) for row in results]  # optional: convert Record -> dict

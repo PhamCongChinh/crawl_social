@@ -1,9 +1,12 @@
 import httpx
 
+from app.helpers.telegram import Telegram
+
 URL_ETL_CLASSIFIED = 'http://103.97.125.64:8900/api/elastic/insert-posts'
 URL_ETL_UNCLASSIFIED = 'http://103.97.125.64:8900/api/elastic/insert-unclassified-org-posts'
     
-async def postToES(content: any) -> any:
+async def postToESClassified(content: any) -> any:
+    Telegram.send_alert(f"[CLASSIFIED]Đã đẩy {len(content)} bài viết lên Elasticsearch")
     data = {
         "index": "facebook_raw_posts",
         "data": content,
@@ -21,8 +24,11 @@ async def postToES(content: any) -> any:
     except Exception as e:
         print(f"[ERROR] Insert exception: {e}")
         return {"successes": 0, "errors": [{"error": str(e)}]}
-    
+
+
+
 async def postToESUnclassified(content: any) -> any:
+    Telegram.send_alert(f"[UNCLASSIFIED]Đã đẩy {len(content)} bài viết lên Elasticsearch")
     data = {
         "index": "not_classify_org_posts",
         "data": content,

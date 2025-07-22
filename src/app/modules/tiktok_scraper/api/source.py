@@ -3,8 +3,6 @@ from fastapi import APIRouter, HTTPException
 
 import logging
 
-# from app.tasks import crawl_source_task
-
 log = logging.getLogger(__name__)
 
 from app.modules.tiktok_scraper.models.source import SourceModel
@@ -24,7 +22,7 @@ async def get_sources():
         log.error(f"Lỗi khi lấy URLs: {e}")
         raise HTTPException(status_code=500, detail="Không thể lấy danh sách URLs")
     
-@router.post("/sources")
+@router.post("/sources/source")
 async def create_or_update_source(request: SourceModel):
     data = request.model_dump(exclude_unset=True)
     status = await SourceService.upsert_source(data)

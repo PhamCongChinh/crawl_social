@@ -2,6 +2,7 @@ from app.modules.tiktok_scraper.models.keyword import KeywordModel
 
 
 class SearchService():
+    # V1
     @staticmethod
     async def get_keywords():
         return await KeywordModel.find_all().to_list()

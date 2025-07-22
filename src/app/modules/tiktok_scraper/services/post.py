@@ -8,8 +8,8 @@ log = logging.getLogger(__name__)
 
 class PostService:
     @staticmethod
-    async def get_posts():
-        return await PostModel.find_all().to_list()
+    async def get_posts() -> list[PostModel]:
+        return await PostModel.find_all().limit(2).to_list()
     
     # @staticmethod
     # async def upsert_posts_bulk(posts: list[dict], channel: ChannelModel): #channel: ChannelModel

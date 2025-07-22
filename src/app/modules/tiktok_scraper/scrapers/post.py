@@ -6,6 +6,7 @@ import jmespath
 
 import logging
 
+from app.helpers.telegram import Telegram
 from app.utils.delay import async_delay
 log = logging.getLogger(__name__)
 
@@ -88,18 +89,18 @@ async def scrape_posts(urls: List[str]) -> List[Dict]:
     data = []
     async for response in SCRAPFLY.concurrent_scrape(to_scrape):
         cost = response.cost
-        status = response.status_code
         url = response.scrape_config.url
         if cost > 6:
-            log.warning(f"[Scraper Post] ❌ High Cost: {cost} | Status: {status} | URL: {url}")
+            log.warning(f"[SCRAPFLY POST] ❌ Chi phí: {cost} | URL: {url}")
+            Telegram.send_alert(f"Chi phí: {cost} | URL: {url}")
         else:
-            log.info(f"[Scraper Post] ✅ Cost: {cost} | Status: {status} | URL: {url}")
+            log.info(f"[SCRAPFLY POST] ✅ Chi phí: {cost} | URL: {url}")
         try:
             post_data = parse_post(response)
             data.append(post_data)
         except Exception as e:
-            log.error(f"[Scraper Post] ⚠️ Lỗi parse URL: {url} → {e}")
+            log.error(f"[SCRAPFLY POST] Lỗi parse URL: {url} → {e}")
 
         await async_delay(1,2)
-    log.info(f"[Scraper Post] Đã quét {len(data)} post")
+    log.info(f"[SCRAPFLY POST] Đã quét {len(data)} post")
     return data
