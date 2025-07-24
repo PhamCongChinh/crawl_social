@@ -1,8 +1,10 @@
 import os
 import datetime
+import re
 import secrets
 import json
 import uuid
+from zoneinfo import ZoneInfo
 import jmespath
 from typing import Dict, List
 from urllib.parse import urlencode, quote, urlparse, parse_qs
@@ -49,12 +51,11 @@ async def obtain_session(url: str) -> str:
         url,
         asp=True,
         proxy_pool="public_datacenter_pool",  # hoặc residential_pool nếu muốn IP người dùng
-        country="AU",
+        country="KR",
         render_js=True,
         rendering_stage="domcontentloaded",
-        session=session_id,
-        retry=False,
-        timeout=30000
+        cost_budget=10,
+        session=session_id
         )
     )
     if res.cost > 6:
@@ -68,7 +69,9 @@ async def obtain_session(url: str) -> str:
 
 async def scrape_search(keyword: str, max_search: int, search_count: int = 12) -> List[Dict]:
     def generate_search_id():
-        timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        # timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        now_vn = datetime.datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
+        timestamp = now_vn.strftime("%Y%m%d%H%M%S")
         random_hex_length = (32 - len(timestamp)) // 2  # calculate bytes needed
         random_hex = secrets.token_hex(random_hex_length).upper()
         random_id = timestamp + random_hex
@@ -80,22 +83,30 @@ async def scrape_search(keyword: str, max_search: int, search_count: int = 12) -
             "keyword": keyword, #quote(keyword)
             "offset": cursor,  # the index to start from
             "search_id": generate_search_id(),
+            "region": "VN",
+            "priority_region": "VN",
+            "tz_name": "Asia/Saigon",
+            "app_language":"vi",
+            "browser_language":"vi-VN",
+            "webcast_language":"vi"
         }
-        return base_url + urlencode(params)
+        encoded = urlencode(params)
+        encoded_fixed = encoded.replace('+', '%20')
+        return base_url + encoded_fixed
 
     log.info("Đang thiết lập session gọi API tìm kiếm TikTok...")
-    session_id = await obtain_session(url="https://www.tiktok.com/search?q=" + quote(keyword)) #quote(keyword)
+    time_vn = datetime.datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
+    unix_ts = int(time_vn.timestamp() * 1000)
+    query = keyword.replace(" ", "%20")
+    session_id = await obtain_session(url=f"https://www.tiktok.com/search?q={query}&t={unix_ts}") #quote(keyword)
 
     log.info("scraping the first search batch")
     first_page = await SCRAPFLY.async_scrape(
         ScrapeConfig(
             form_api_url(cursor=0),
-            # **BASE_CONFIG,
-            asp=False,
+            asp=True,
             proxy_pool="public_datacenter_pool",  # hoặc residential_pool nếu muốn IP người dùng
-            country="AU",
-            retry=False,
-            timeout=30000,
+            country="KR",
             rendering_stage="domcontentloaded",
             headers={
                 "content-type": "application/json",
@@ -112,24 +123,35 @@ async def scrape_search(keyword: str, max_search: int, search_count: int = 12) -
     search_data = parse_search(first_page)
 
     # scrape the remaining comments concurrently
-    # log.info(f"scraping search pagination, remaining {max_search // search_count} more pages")
-    # _other_pages = [
-    #     ScrapeConfig(
-    #         form_api_url(cursor=cursor), 
-    #         asp=False,
-    #         proxy_pool="public_datacenter_pool",  # hoặc residential_pool nếu muốn IP người dùng
-    #         country="AU",
-    #         retry=False,
-    #         timeout=30000,
-    #         rendering_stage="domcontentloaded",
-    #         headers={"content-type": "application/json"}, 
-    #         session=session_id
-    #     )
-    #     for cursor in range(search_count, max_search + search_count, search_count)
-    # ]
-    # async for response in SCRAPFLY.concurrent_scrape(_other_pages):
-    #     data = parse_search(response)
-    #     search_data.extend(data)
+    log.info(f"scraping search pagination, remaining {max_search // search_count} more pages")
+    total_cost = 0
+    _other_pages = [
+        ScrapeConfig(
+            form_api_url(cursor=cursor), 
+            asp=True,
+            proxy_pool="public_datacenter_pool",  # hoặc residential_pool nếu muốn IP người dùng
+            country="KR",
+            rendering_stage="domcontentloaded",
+            headers={
+                "content-type": "application/json",
+            }, 
+            session=session_id
+        )
+        for cursor in range(search_count, max_search + search_count, search_count)
+    ]
+    async for response in SCRAPFLY.concurrent_scrape(_other_pages):
+        cost = response.cost or 0
+        total_cost += cost
+        data = parse_search(response)
+        search_data.extend(data)
 
     log.info(f"scraped {len(search_data)} from the search API from the keyword {keyword}")
-    return search_data
+    # return search_data
+    filtered = [v for v in search_data if has_vietnamese_chars(v["desc"])]
+    return filtered
+
+def has_vietnamese_chars(text: str) -> bool:
+    vietnamese_regex = r"[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệ" \
+                       r"ìíỉĩịòóỏõọôồốổỗộơờớởỡợ" \
+                       r"ùúủũụưừứửữựỳýỷỹỵđ]"
+    return bool(re.search(vietnamese_regex, text.lower()))
