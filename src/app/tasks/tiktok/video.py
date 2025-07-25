@@ -271,7 +271,7 @@ async def _crawl_video_batch_keyword(source_dicts: list[dict], job_id: str = Non
                     try:
                         log.info(f"---------------------------------------------------------------------")
                         log.info(f"[{job_id}] Đang cào: {source['keyword']}")
-                        data = await scrape_search(source['keyword'], max_search=100)
+                        data = await scrape_search(source['keyword'], max_search=120)
                         await save_to_mongo_keyword(data=data, source=source)
                         log.info(f"[{job_id}] Cào xong: {source['keyword']} ({len(data)} items)")
                         return {

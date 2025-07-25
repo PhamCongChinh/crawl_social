@@ -67,7 +67,7 @@ async def obtain_session(url: str) -> str:
     return session_id
 
 
-async def scrape_search(keyword: str, max_search: int, search_count: int = 100) -> List[Dict]:
+async def scrape_search(keyword: str, max_search: int, search_count: int = 12) -> List[Dict]:
     def generate_search_id():
         # timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         now_vn = datetime.datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
