@@ -237,7 +237,7 @@ async def _crawl_video_all_keyword(job_id: str):
         async with lifespan_mongo():
             keywords = await SearchService.get_keywords() # Lấy url ưu tiên
             log.info(f"[KEYWORDS] Tổng số từ khóa: {len(keywords)}")
-
+            
             chunk_size = constant.CHUNK_SIZE_VIDEO
             for i in range(0, len(keywords), chunk_size):
                 chunk = keywords[i:i + chunk_size]
@@ -271,7 +271,7 @@ async def _crawl_video_batch_keyword(source_dicts: list[dict], job_id: str = Non
                     try:
                         log.info(f"---------------------------------------------------------------------")
                         log.info(f"[{job_id}] Đang cào: {source['keyword']}")
-                        data = await scrape_search(source['keyword'], max_search=12)
+                        data = await scrape_search(source['keyword'], max_search=100)
                         await save_to_mongo_keyword(data=data, source=source)
                         log.info(f"[{job_id}] Cào xong: {source['keyword']} ({len(data)} items)")
                         return {
