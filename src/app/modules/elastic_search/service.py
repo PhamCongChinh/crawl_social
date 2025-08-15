@@ -4,16 +4,26 @@ from app.helpers.telegram import Telegram
 
 URL_ETL_CLASSIFIED = 'http://103.97.125.64:8900/api/elastic/insert-posts'
 URL_ETL_UNCLASSIFIED = 'http://103.97.125.64:8900/api/elastic/insert-unclassified-org-posts'
+
+URL_KAFKA_CLASSIFIED = 'http://192.168.1.28:4416/api/v1/posts/insert-posts'
+URL_KAFKA_UNCLASSIFIED = 'http://192.168.1.28:4416/api/v1/posts/insert-unclassified-org-posts'
     
 async def postToESClassified(content: any) -> any:
-    Telegram.send_alert(f"[CLASSIFIED]Đã đẩy {len(content)} bài viết lên Elasticsearch")
+    Telegram.send_alert(f"[CLASSIFIED]Đã đẩy {len(content)} bài viết")
     data = {
         "index": "facebook_raw_posts",
         "data": content,
         "upsert": True
     }
     try:
+        # To Kafka
         async with httpx.AsyncClient() as client:
+            Telegram.send_alert(f"[Kafka Classified]Đã đẩy {len(content)} bài viết lên Kafka")
+            response = await client.post(URL_KAFKA_CLASSIFIED, json=data)
+
+        # To ELK
+        async with httpx.AsyncClient() as client:
+            Telegram.send_alert(f"[ETL Classified]Đã đẩy {len(content)} bài viết lên ETL")
             response = await client.post(URL_ETL_CLASSIFIED, json=data)  # URL FastAPI endpoint của bạn
             response.raise_for_status()
             res_data = response.json()
@@ -28,14 +38,21 @@ async def postToESClassified(content: any) -> any:
 
 
 async def postToESUnclassified(content: any) -> any:
-    Telegram.send_alert(f"[UNCLASSIFIED]Đã đẩy {len(content)} bài viết lên Elasticsearch")
+    Telegram.send_alert(f"[UNCLASSIFIED]Đã đẩy {len(content)} bài viết")
     data = {
         "index": "not_classify_org_posts",
         "data": content,
         "upsert": True
     }
     try:
+        # To Kafka
         async with httpx.AsyncClient() as client:
+            Telegram.send_alert(f"[Kafka Unclassified]Đã đẩy {len(content)} bài viết lên Kafka")
+            response = await client.post(URL_KAFKA_UNCLASSIFIED, json=data)
+
+        # To ELK
+        async with httpx.AsyncClient() as client:
+            Telegram.send_alert(f"[ETL Unclassified]Đã đẩy {len(content)} bài viết lên ETL")
             response = await client.post(URL_ETL_UNCLASSIFIED, json=data)  # URL FastAPI endpoint của bạn
             response.raise_for_status()
             res_data = response.json()
