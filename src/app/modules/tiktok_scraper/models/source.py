@@ -13,6 +13,6 @@ class SourceModel(Document):
 
     class Settings:
         name = "tiktok_sources"
-        indexes = [
-            IndexModel([("source_url", ASCENDING)], unique=True)
-        ]
+        # indexes = [
+        #     IndexModel([("source_url", ASCENDING)], unique=True)
+        # ]

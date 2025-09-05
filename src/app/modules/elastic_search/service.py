@@ -18,6 +18,13 @@ async def postToESClassified(content: any) -> any:
         "data": content,
         "upsert": True
     }
+
+    data_test = {
+        "index": "facebook_raw_posts",
+        "data": [item for item in content if item["org_id"] == 412592],
+        "upsert": True
+    }
+
     try:
         # To Kafka
         async with httpx.AsyncClient() as client:
@@ -27,7 +34,7 @@ async def postToESClassified(content: any) -> any:
         # To Kafka Test
         async with httpx.AsyncClient() as client:
             Telegram.send_alert(f"[Kafka Classified Test]Đã đẩy {len(content)} bài viết lên Kafka")
-            response = await client.post(URL_KAFKA_CLASSIFIED_TEST, json=data)
+            response = await client.post(URL_KAFKA_CLASSIFIED_TEST, json=data_test)
 
         # To ELK
         async with httpx.AsyncClient() as client:
@@ -51,6 +58,13 @@ async def postToESUnclassified(content: any) -> any:
         "data": content,
         "upsert": True
     }
+
+    data_test = {
+        "index": "facebook_raw_posts",
+        "data": [item for item in content if item["org_id"] == 412592],
+        "upsert": True
+    }
+    
     try:
         # To Kafka
         async with httpx.AsyncClient() as client:
@@ -60,7 +74,7 @@ async def postToESUnclassified(content: any) -> any:
         # To Kafka Test
         async with httpx.AsyncClient() as client:
             Telegram.send_alert(f"[Kafka Unclassified Test]Đã đẩy {len(content)} bài viết lên Kafka")
-            response = await client.post(URL_KAFKA_UNCLASSIFIED_TEST, json=data)
+            response = await client.post(URL_KAFKA_UNCLASSIFIED_TEST, json=data_test)
 
         # To ELK
         async with httpx.AsyncClient() as client:
