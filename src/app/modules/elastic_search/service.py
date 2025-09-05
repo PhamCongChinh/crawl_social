@@ -13,9 +13,14 @@ URL_KAFKA_UNCLASSIFIED_TEST = 'http://192.168.1.28:4420/api/v1/posts/insert-uncl
     
 async def postToESClassified(content: any) -> any:
     Telegram.send_alert(f"[CLASSIFIED]Đã đẩy {len(content)} bài viết")
+    # data = {
+    #     "index": "facebook_raw_posts",
+    #     "data": content,
+    #     "upsert": True
+    # }
     data = {
         "index": "facebook_raw_posts",
-        "data": content,
+        "data": [item for item in content if item["org_id"] != 412592],
         "upsert": True
     }
 
@@ -58,12 +63,6 @@ async def postToESUnclassified(content: any) -> any:
         "data": content,
         "upsert": True
     }
-
-    data_test = {
-        "index": "facebook_raw_posts",
-        "data": [item for item in content if item["org_id"] == 412592],
-        "upsert": True
-    }
     
     try:
         # To Kafka
@@ -74,7 +73,7 @@ async def postToESUnclassified(content: any) -> any:
         # To Kafka Test
         async with httpx.AsyncClient() as client:
             Telegram.send_alert(f"[Kafka Unclassified Test]Đã đẩy {len(content)} bài viết lên Kafka")
-            response = await client.post(URL_KAFKA_UNCLASSIFIED_TEST, json=data_test)
+            response = await client.post(URL_KAFKA_UNCLASSIFIED_TEST, json=data)
 
         # To ELK
         async with httpx.AsyncClient() as client:
