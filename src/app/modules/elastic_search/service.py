@@ -70,11 +70,6 @@ async def postToESUnclassified(content: any) -> any:
             Telegram.send_alert(f"[Kafka Unclassified]Đã đẩy {len(content)} bài viết lên Kafka")
             response = await client.post(URL_KAFKA_UNCLASSIFIED, json=data)
         
-        # To Kafka Test
-        async with httpx.AsyncClient() as client:
-            Telegram.send_alert(f"[Kafka Unclassified Test]Đã đẩy {len(content)} bài viết lên Kafka")
-            response = await client.post(URL_KAFKA_UNCLASSIFIED_TEST, json=data)
-
         # To ELK
         async with httpx.AsyncClient() as client:
             response = await client.post(URL_ETL_UNCLASSIFIED, json=data)  # URL FastAPI endpoint của bạn
