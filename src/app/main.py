@@ -35,9 +35,3 @@ app.include_router(google_router, prefix="/api/v1/google", tags=["google"])
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
-
-# def main():
-#     uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)
-
-# if __name__ == "__main__":
-#     main()

@@ -11,7 +11,9 @@ class SourceService:
     # V1
     @staticmethod
     async def get_sources_classified():
-        return await SourceModel.find(SourceModel.org_id != 0).to_list()
+        return await SourceModel.find(
+            (SourceModel.org_id == 0) | (SourceModel.org_id == 675983) | (SourceModel.org_id == 412592)
+        ).to_list()
     
     # V1
     @staticmethod

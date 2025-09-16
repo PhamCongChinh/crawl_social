@@ -86,21 +86,21 @@ services:
 
 
   # WORKER TEST
-  tiktok_test:
-    build:
-      context: .
-    container_name: tiktok_test
-    volumes:
-      - ./src:/app/src
-      - ./pyproject.toml:/app/pyproject.toml
-      - ./poetry.lock:/app/poetry.lock
-    env_file:
-      - .env
-    depends_on:
-      - redis_server
-      - fastapi_app
-    command: >
-      poetry run celery -A app.worker worker --concurrency=1 --loglevel=info -Q tiktok_test -n tiktok_test@%h
+  # tiktok_test:
+  #   build:
+  #     context: .
+  #   container_name: tiktok_test
+  #   volumes:
+  #     - ./src:/app/src
+  #     - ./pyproject.toml:/app/pyproject.toml
+  #     - ./poetry.lock:/app/poetry.lock
+  #   env_file:
+  #     - .env
+  #   depends_on:
+  #     - redis_server
+  #     - fastapi_app
+  #   command: >
+  #     poetry run celery -A app.worker worker --concurrency=1 --loglevel=info -Q tiktok_test -n tiktok_test@%h
 
   # worker_tiktok_comments:
   #   build:
@@ -149,24 +149,24 @@ services:
     # command: ["redis-server", "--appendonly", "yes"]
     # restart: unless-stopped
 
-  flower_dashboard:
-    build:
-      context: .
-      # dockerfile: Dockerfile
-    container_name: flower_dashboard
-    depends_on:
-      - redis_server
-      - celery_worker
-    env_file:
-      - .env
-    # environment:
-    #   - PYTHONPATH=/app/src
-    #   - POETRY_VIRTUALENVS_IN_PROJECT=true
-    ports:
-      - "5555:5555"
-    command: >
-      poetry run celery -A app.worker --broker=${REDIS_BROKER_URL} flower --port=5555 
-    # restart: unless-stopped
+  # flower_dashboard:
+  #   build:
+  #     context: .
+  #     # dockerfile: Dockerfile
+  #   container_name: flower_dashboard
+  #   depends_on:
+  #     - redis_server
+  #     - celery_worker
+  #   env_file:
+  #     - .env
+  #   # environment:
+  #   #   - PYTHONPATH=/app/src
+  #   #   - POETRY_VIRTUALENVS_IN_PROJECT=true
+  #   ports:
+  #     - "5555:5555"
+  #   command: >
+  #     poetry run celery -A app.worker --broker=${REDIS_BROKER_URL} flower --port=5555 
+  #   # restart: unless-stopped
 
 volumes:
   redis_data:
