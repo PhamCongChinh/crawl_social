@@ -5,6 +5,7 @@ from pymongo import UpdateOne
 from app.modules.tiktok_scraper.models.source import SourceModel
 from app.config import postgres_connection
 from app.utils.timezone import now_vn
+from beanie.operators import In
 
 class SourceService:
 
@@ -12,7 +13,7 @@ class SourceService:
     @staticmethod
     async def get_sources_classified():
         return await SourceModel.find(
-            (SourceModel.org_id == 0) | (SourceModel.org_id == 675983) | (SourceModel.org_id == 412592)
+            In(SourceModel.org_id, [0, 675983, 412592])
         ).to_list()
     
     # V1
