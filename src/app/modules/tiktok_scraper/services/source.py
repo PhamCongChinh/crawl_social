@@ -13,7 +13,7 @@ class SourceService:
     @staticmethod
     async def get_sources_classified():
         return await SourceModel.find(
-            In(SourceModel.org_id, [0, 675983, 412592])
+            In(SourceModel.org_id, [2, 675983, 412592])
         ).to_list()
     
     # V1
